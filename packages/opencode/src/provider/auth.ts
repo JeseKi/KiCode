@@ -4,7 +4,7 @@ import { Auth } from "@/auth"
 import { InstanceState } from "@/effect/instance-state"
 import { makeRuntime } from "@/effect/run-service"
 import { Plugin } from "../plugin"
-import { ProviderID } from "./schema"
+import { allow, ProviderID } from "./schema"
 import { Array as Arr, Effect, Layer, Record, Result, ServiceMap } from "effect"
 import z from "zod"
 
@@ -135,7 +135,7 @@ export namespace ProviderAuth {
 
       const methods = Effect.fn("ProviderAuth.methods")(function* () {
         const hooks = (yield* InstanceState.get(state)).hooks
-        return Record.map(hooks, (item) =>
+        return Record.map(Record.filter(hooks, (_, id) => allow(id)), (item) =>
           item.methods.map(
             (method): Method => ({
               type: method.type,

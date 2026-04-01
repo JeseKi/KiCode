@@ -54,7 +54,7 @@ import { fromNodeProviderChain } from "@aws-sdk/credential-providers"
 import { GoogleAuth } from "google-auth-library"
 import { ProviderTransform } from "./transform"
 import { Installation } from "../installation"
-import { ModelID, ProviderID } from "./schema"
+import { allow, ModelID, ProviderID } from "./schema"
 
 export namespace Provider {
   const log = Log.create({ service: "provider" })
@@ -972,12 +972,13 @@ export namespace Provider {
           using _ = log.time("state")
           const cfg = yield* config.get()
           const modelsDev = yield* Effect.promise(() => ModelsDev.get())
-          const database = mapValues(modelsDev, fromModelsDevProvider)
+          const database = mapValues(pickBy(modelsDev, (_, id) => allow(id)), fromModelsDevProvider)
 
           const disabled = new Set(cfg.disabled_providers ?? [])
           const enabled = cfg.enabled_providers ? new Set(cfg.enabled_providers) : null
 
           function isProviderAllowed(providerID: ProviderID): boolean {
+            if (!allow(providerID)) return false
             if (enabled && !enabled.has(providerID)) return false
             if (disabled.has(providerID)) return false
             return true
@@ -998,7 +999,7 @@ export namespace Provider {
 
           log.info("init")
 
-          const configProviders = Object.entries(cfg.provider ?? {})
+          const configProviders = Object.entries(cfg.provider ?? {}).filter(([id]) => allow(id))
 
           function mergeProvider(providerID: ProviderID, provider: Partial<Info>) {
             const existing = providers[providerID]

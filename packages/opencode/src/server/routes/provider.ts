@@ -5,7 +5,7 @@ import { Config } from "../../config/config"
 import { Provider } from "../../provider/provider"
 import { ModelsDev } from "../../provider/models"
 import { ProviderAuth } from "../../provider/auth"
-import { ProviderID } from "../../provider/schema"
+import { allow, ProviderID } from "../../provider/schema"
 import { mapValues } from "remeda"
 import { errors } from "../error"
 import { lazy } from "../../util/lazy"
@@ -46,7 +46,7 @@ export const ProviderRoutes = lazy(() =>
         const allProviders = await ModelsDev.get()
         const filteredProviders: Record<string, (typeof allProviders)[string]> = {}
         for (const [key, value] of Object.entries(allProviders)) {
-          if ((enabled ? enabled.has(key) : true) && !disabled.has(key)) {
+          if (allow(key) && (enabled ? enabled.has(key) : true) && !disabled.has(key)) {
             filteredProviders[key] = value
           }
         }
@@ -81,7 +81,12 @@ export const ProviderRoutes = lazy(() =>
         },
       }),
       async (c) => {
-        return c.json(await ProviderAuth.methods())
+        const all = await ProviderAuth.methods()
+        const out: Record<string, z.infer<typeof ProviderAuth.Method>[]> = {}
+        for (const [id, methods] of Object.entries(all)) {
+          if (allow(id)) out[id] = methods
+        }
+        return c.json(out)
       },
     )
     .post(

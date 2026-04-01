@@ -3,6 +3,7 @@ import { cmd } from "./cmd"
 import * as prompts from "@clack/prompts"
 import { UI } from "../ui"
 import { ModelsDev } from "../../provider/models"
+import { allow } from "../../provider/schema"
 import { map, pipe, sortBy, values } from "remeda"
 import path from "path"
 import os from "os"
@@ -313,7 +314,7 @@ export const ProvidersLoginCommand = cmd({
         const providers = await ModelsDev.get().then((x) => {
           const filtered: Record<string, (typeof x)[string]> = {}
           for (const [key, value] of Object.entries(x)) {
-            if ((enabled ? enabled.has(key) : true) && !disabled.has(key)) {
+            if (allow(key) && (enabled ? enabled.has(key) : true) && !disabled.has(key)) {
               filtered[key] = value
             }
           }
@@ -321,13 +322,9 @@ export const ProvidersLoginCommand = cmd({
         })
 
         const priority: Record<string, number> = {
-          opencode: 0,
-          openai: 1,
-          "github-copilot": 2,
-          google: 3,
-          anthropic: 4,
-          openrouter: 5,
-          vercel: 6,
+          openai: 0,
+          anthropic: 1,
+          google: 2,
         }
         const pluginProviders = resolvePluginProviders({
           hooks: await Plugin.list(),
@@ -335,7 +332,7 @@ export const ProvidersLoginCommand = cmd({
           disabled,
           enabled,
           providerNames: Object.fromEntries(Object.entries(config.provider ?? {}).map(([id, p]) => [id, p.name])),
-        })
+        }).filter((x) => allow(x.id))
         const options = [
           ...pipe(
             providers,
@@ -348,8 +345,9 @@ export const ProvidersLoginCommand = cmd({
               label: x.name,
               value: x.id,
               hint: {
-                opencode: "recommended",
                 openai: "ChatGPT Plus/Pro or API key",
+                anthropic: "Claude API key",
+                google: "Google AI Studio API key",
               }[x.id],
             })),
           ),
@@ -375,13 +373,7 @@ export const ProvidersLoginCommand = cmd({
           const selected = await prompts.autocomplete({
             message: "Select provider",
             maxItems: 8,
-            options: [
-              ...options,
-              {
-                value: "other",
-                label: "Other",
-              },
-            ],
+            options,
           })
           if (prompts.isCancel(selected)) throw new UI.CancelledError()
           provider = selected as string
@@ -393,47 +385,9 @@ export const ProvidersLoginCommand = cmd({
           if (handled) return
         }
 
-        if (provider === "other") {
-          const custom = await prompts.text({
-            message: "Enter provider id",
-            validate: (x) => (x && x.match(/^[0-9a-z-]+$/) ? undefined : "a-z, 0-9 and hyphens only"),
-          })
-          if (prompts.isCancel(custom)) throw new UI.CancelledError()
-          provider = custom.replace(/^@ai-sdk\//, "")
-
-          const customPlugin = await Plugin.list().then((x) => x.findLast((x) => x.auth?.provider === provider))
-          if (customPlugin && customPlugin.auth) {
-            const handled = await handlePluginAuth({ auth: customPlugin.auth }, provider, args.method)
-            if (handled) return
-          }
-
-          prompts.log.warn(
-            `This only stores a credential for ${provider} - you will need configure it in opencode.json, check the docs for examples.`,
-          )
-        }
-
-        if (provider === "amazon-bedrock") {
-          prompts.log.info(
-            "Amazon Bedrock authentication priority:\n" +
-              "  1. Bearer token (AWS_BEARER_TOKEN_BEDROCK or /connect)\n" +
-              "  2. AWS credential chain (profile, access keys, IAM roles, EKS IRSA)\n\n" +
-              "Configure via opencode.json options (profile, region, endpoint) or\n" +
-              "AWS environment variables (AWS_PROFILE, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_WEB_IDENTITY_TOKEN_FILE).",
-          )
-        }
-
-        if (provider === "opencode") {
-          prompts.log.info("Create an api key at https://opencode.ai/auth")
-        }
-
-        if (provider === "vercel") {
-          prompts.log.info("You can create an api key at https://vercel.link/ai-gateway-token")
-        }
-
-        if (["cloudflare", "cloudflare-ai-gateway"].includes(provider)) {
-          prompts.log.info(
-            "Cloudflare AI Gateway can be configured with CLOUDFLARE_GATEWAY_ID, CLOUDFLARE_ACCOUNT_ID, and CLOUDFLARE_API_TOKEN environment variables. Read more: https://opencode.ai/docs/providers/#cloudflare-ai-gateway",
-          )
+        if (!allow(provider)) {
+          prompts.log.error(`Unsupported provider "${provider}"`)
+          process.exit(1)
         }
 
         const key = await prompts.password({

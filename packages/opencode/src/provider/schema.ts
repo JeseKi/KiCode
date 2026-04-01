@@ -3,6 +3,10 @@ import z from "zod"
 
 import { withStatics } from "@/util/schema"
 
+export const allowed = new Set(["anthropic", "openai", "google"])
+
+export const allow = (id: string) => allowed.has(id)
+
 const providerIdSchema = Schema.String.pipe(Schema.brand("ProviderID"))
 
 export type ProviderID = typeof providerIdSchema.Type
