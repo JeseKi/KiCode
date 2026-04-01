@@ -8,6 +8,7 @@ import {
   handleNotificationClick,
   loadLocaleDict,
   normalizeLocale,
+  type DisplayBackend,
   type Locale,
   type Platform,
   PlatformProvider,
@@ -36,6 +37,18 @@ import "./styles.css"
 import { Channel } from "@tauri-apps/api/core"
 import { commands, type InitStep } from "./bindings"
 import { createMenu } from "./menu"
+
+type WslPathMode = "windows" | "linux"
+type SidecarReady = {
+  url: string
+  username?: string | null
+  password?: string | null
+}
+
+const wslPath = commands.wslPath as unknown as (path: string, mode?: WslPathMode | null) => Promise<string>
+const getDisplayBackend = commands.getDisplayBackend as unknown as () => Promise<DisplayBackend | null>
+const setDisplayBackend = commands.setDisplayBackend as unknown as (backend: DisplayBackend) => Promise<null>
+const awaitInitialization = commands.awaitInitialization as unknown as (events: Channel<InitStep>) => Promise<SidecarReady>
 
 const root = document.getElementById("root")
 if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
@@ -71,15 +84,15 @@ const createPlatform = (): Platform => {
 
   const wslHome = async () => {
     if (os !== "windows" || !window.__OPENCODE__?.wsl) return undefined
-    return commands.wslPath("~", "windows").catch(() => undefined)
+    return wslPath("~", "windows").catch(() => undefined)
   }
 
   const handleWslPicker = async <T extends string | string[]>(result: T | null): Promise<T | null> => {
     if (!result || !window.__OPENCODE__?.wsl) return result
     if (Array.isArray(result)) {
-      return Promise.all(result.map((path) => commands.wslPath(path, "linux").catch(() => path))) as any
+      return Promise.all(result.map((path) => wslPath(path, "linux").catch(() => path))) as any
     }
-    return commands.wslPath(result, "linux").catch(() => result) as any
+    return wslPath(result, "linux").catch(() => result) as any
   }
 
   return {
@@ -364,12 +377,12 @@ const createPlatform = (): Platform => {
     },
 
     getDisplayBackend: async () => {
-      const result = await commands.getDisplayBackend().catch(() => null)
+      const result = await getDisplayBackend().catch(() => null)
       return result
     },
 
     setDisplayBackend: async (backend) => {
-      await commands.setDisplayBackend(backend)
+      await setDisplayBackend(backend)
     },
 
     parseMarkdown: (markdown: string) => commands.parseMarkdownCommand(markdown),
@@ -430,7 +443,7 @@ render(() => {
   }
 
   // Fetch sidecar credentials from Rust (available immediately, before health check)
-  const [sidecar] = createResource(() => commands.awaitInitialization(new Channel<InitStep>() as any))
+  const [sidecar] = createResource(() => awaitInitialization(new Channel<InitStep>() as any))
 
   const [defaultServer] = createResource(() =>
     platform.getDefaultServer?.().then((url) => {

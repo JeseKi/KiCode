@@ -20,6 +20,8 @@ const delays = [3000, 9000]
 
 void initI18n()
 
+const emitLoadingWindowComplete = events.loadingWindowComplete.emit as unknown as () => Promise<void>
+
 render(() => {
   const [step, setStep] = createSignal<InitStep | null>(null)
   const [line, setLine] = createSignal(0)
@@ -56,7 +58,7 @@ render(() => {
   createEffect(() => {
     if (phase() !== "done") return
 
-    const timer = setTimeout(() => events.loadingWindowComplete.emit(null), 1000)
+    const timer = setTimeout(() => void emitLoadingWindowComplete(), 1000)
     onCleanup(() => clearTimeout(timer))
   })
 
