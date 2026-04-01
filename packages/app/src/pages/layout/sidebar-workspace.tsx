@@ -304,7 +304,7 @@ const WorkspaceSessionList = (props: {
 export const SortableWorkspace = (props: {
   ctx: WorkspaceSidebarContext
   directory: string
-  project: LocalProject
+  project?: LocalProject
   sortNow: Accessor<number>
   mobile?: boolean
   popover?: boolean
@@ -319,15 +319,17 @@ export const SortableWorkspace = (props: {
     open: false,
     pendingRename: false,
   })
+  const project = createMemo(() => props.project)
   const slug = createMemo(() => base64Encode(props.directory))
   const sessions = createMemo(() => sortedRootSessions(workspaceStore, props.sortNow()))
   const children = createMemo(() => childMapByParent(workspaceStore.session))
-  const local = createMemo(() => props.directory === props.project.worktree)
+  const local = createMemo(() => props.directory === project()?.worktree)
   const active = createMemo(() => workspaceKey(props.ctx.currentDir()) === workspaceKey(props.directory))
   const workspaceValue = createMemo(() => {
+    const item = project()
     const branch = workspaceStore.vcs?.branch
     const name = branch ?? getFilename(props.directory)
-    return props.ctx.workspaceName(props.directory, props.project.id, branch) ?? name
+    return props.ctx.workspaceName(props.directory, item?.id, branch) ?? name
   })
   const open = createMemo(() => props.ctx.workspaceExpanded(props.directory, local()))
   const boot = createMemo(() => open() || active())
@@ -358,7 +360,7 @@ export const SortableWorkspace = (props: {
       InlineEditor={props.ctx.InlineEditor}
       renameWorkspace={props.ctx.renameWorkspace}
       setEditor={props.ctx.setEditor}
-      projectId={props.project.id}
+      projectId={project()?.id}
     />
   )
 
@@ -374,131 +376,154 @@ export const SortableWorkspace = (props: {
   })
 
   return (
-    <div
-      // @ts-ignore
-      use:sortable
-      classList={{
-        "opacity-30": sortable.isActiveDraggable,
-        "opacity-50 pointer-events-none": busy(),
-      }}
-    >
-      <Collapsible variant="ghost" open={open()} class="shrink-0" onOpenChange={openWrapper}>
-        <div class="py-1">
-          <div
-            class="group/workspace relative"
-            data-component="workspace-item"
-            data-workspace={base64Encode(props.directory)}
-          >
-            <div class="flex items-center gap-1">
-              <Show
-                when={workspaceEditActive()}
-                fallback={
-                  <Collapsible.Trigger
-                    class={`flex items-center justify-between w-full pl-2 py-1.5 rounded-md hover:bg-surface-raised-base-hover transition-[padding] duration-200 ${
-                      menu.open ? "pr-16" : "pr-2"
-                    } group-hover/workspace:pr-16 group-focus-within/workspace:pr-16`}
-                    data-action="workspace-toggle"
-                    data-workspace={base64Encode(props.directory)}
-                  >
-                    {header()}
-                  </Collapsible.Trigger>
-                }
+    <Show when={project()}>
+      {(item) => (
+        <div
+          // @ts-ignore
+          use:sortable
+          classList={{
+            "opacity-30": sortable.isActiveDraggable,
+            "opacity-50 pointer-events-none": busy(),
+          }}
+        >
+          <Collapsible variant="ghost" open={open()} class="shrink-0" onOpenChange={openWrapper}>
+            <div class="py-1">
+              <div
+                class="group/workspace relative"
+                data-component="workspace-item"
+                data-workspace={base64Encode(props.directory)}
               >
-                <div
-                  class={`flex items-center justify-between w-full pl-2 py-1.5 rounded-md transition-[padding] duration-200 ${
-                    menu.open ? "pr-16" : "pr-2"
-                  } group-hover/workspace:pr-16 group-focus-within/workspace:pr-16`}
-                >
-                  {header()}
+                <div class="flex items-center gap-1">
+                  <Show
+                    when={workspaceEditActive()}
+                    fallback={
+                      <Collapsible.Trigger
+                        class={`flex items-center justify-between w-full pl-2 py-1.5 rounded-md hover:bg-surface-raised-base-hover transition-[padding] duration-200 ${
+                          menu.open ? "pr-16" : "pr-2"
+                        } group-hover/workspace:pr-16 group-focus-within/workspace:pr-16`}
+                        data-action="workspace-toggle"
+                        data-workspace={base64Encode(props.directory)}
+                      >
+                        {header()}
+                      </Collapsible.Trigger>
+                    }
+                  >
+                    <div
+                      class={`flex items-center justify-between w-full pl-2 py-1.5 rounded-md transition-[padding] duration-200 ${
+                        menu.open ? "pr-16" : "pr-2"
+                      } group-hover/workspace:pr-16 group-focus-within/workspace:pr-16`}
+                    >
+                      {header()}
+                    </div>
+                  </Show>
+                  <WorkspaceActions
+                    directory={props.directory}
+                    local={local}
+                    busy={busy}
+                    menuOpen={() => menu.open}
+                    pendingRename={() => menu.pendingRename}
+                    setMenuOpen={(open) => setMenu("open", open)}
+                    setPendingRename={(value) => setMenu("pendingRename", value)}
+                    sidebarHovering={props.ctx.sidebarHovering}
+                    touch={touch}
+                    language={language}
+                    workspaceValue={workspaceValue}
+                    openEditor={props.ctx.openEditor}
+                    showResetWorkspaceDialog={props.ctx.showResetWorkspaceDialog}
+                    showDeleteWorkspaceDialog={props.ctx.showDeleteWorkspaceDialog}
+                    root={item().worktree}
+                    setHoverSession={props.ctx.setHoverSession}
+                    clearHoverProjectSoon={props.ctx.clearHoverProjectSoon}
+                    navigateToNewSession={() => navigate(`/${slug()}/session`)}
+                  />
                 </div>
-              </Show>
-              <WorkspaceActions
-                directory={props.directory}
-                local={local}
-                busy={busy}
-                menuOpen={() => menu.open}
-                pendingRename={() => menu.pendingRename}
-                setMenuOpen={(open) => setMenu("open", open)}
-                setPendingRename={(value) => setMenu("pendingRename", value)}
-                sidebarHovering={props.ctx.sidebarHovering}
-                touch={touch}
-                language={language}
-                workspaceValue={workspaceValue}
-                openEditor={props.ctx.openEditor}
-                showResetWorkspaceDialog={props.ctx.showResetWorkspaceDialog}
-                showDeleteWorkspaceDialog={props.ctx.showDeleteWorkspaceDialog}
-                root={props.project.worktree}
-                setHoverSession={props.ctx.setHoverSession}
-                clearHoverProjectSoon={props.ctx.clearHoverProjectSoon}
-                navigateToNewSession={() => navigate(`/${slug()}/session`)}
-              />
+              </div>
             </div>
-          </div>
+            <Collapsible.Content>
+              <WorkspaceSessionList
+                slug={slug}
+                mobile={props.mobile}
+                popover={props.popover}
+                ctx={props.ctx}
+                showNew={showNew}
+                loading={loading}
+                sessions={sessions}
+                children={children}
+                hasMore={hasMore}
+                loadMore={loadMore}
+                language={language}
+              />
+            </Collapsible.Content>
+          </Collapsible>
         </div>
-
-        <Collapsible.Content>
-          <WorkspaceSessionList
-            slug={slug}
-            mobile={props.mobile}
-            popover={props.popover}
-            ctx={props.ctx}
-            showNew={showNew}
-            loading={loading}
-            sessions={sessions}
-            children={children}
-            hasMore={hasMore}
-            loadMore={loadMore}
-            language={language}
-          />
-        </Collapsible.Content>
-      </Collapsible>
-    </div>
+      )}
+    </Show>
   )
 }
 
 export const LocalWorkspace = (props: {
   ctx: WorkspaceSidebarContext
-  project: LocalProject
+  project?: LocalProject
   sortNow: Accessor<number>
   mobile?: boolean
   popover?: boolean
 }): JSX.Element => {
   const globalSync = useGlobalSync()
   const language = useLanguage()
+  const project = createMemo(() => props.project)
   const workspace = createMemo(() => {
-    const [store, setStore] = globalSync.child(props.project.worktree)
+    const item = project()
+    if (!item) return
+    const [store, setStore] = globalSync.child(item.worktree)
     return { store, setStore }
   })
-  const slug = createMemo(() => base64Encode(props.project.worktree))
-  const sessions = createMemo(() => sortedRootSessions(workspace().store, props.sortNow()))
-  const children = createMemo(() => childMapByParent(workspace().store.session))
-  const booted = createMemo((prev) => prev || workspace().store.status === "complete", false)
+  const slug = createMemo(() => {
+    const item = project()
+    if (!item) return ""
+    return base64Encode(item.worktree)
+  })
+  const sessions = createMemo(() => {
+    const data = workspace()
+    if (!data) return []
+    return sortedRootSessions(data.store, props.sortNow())
+  })
+  const children = createMemo(() => {
+    const data = workspace()
+    if (!data) return new Map<string, string[]>()
+    return childMapByParent(data.store.session)
+  })
+  const booted = createMemo((prev) => prev || workspace()?.store.status === "complete", false)
   const count = createMemo(() => sessions()?.length ?? 0)
   const loading = createMemo(() => !booted() && count() === 0)
-  const hasMore = createMemo(() => workspace().store.sessionTotal > count())
+  const hasMore = createMemo(() => (workspace()?.store.sessionTotal ?? 0) > count())
   const loadMore = async () => {
-    workspace().setStore("limit", (limit) => (limit ?? 0) + 5)
-    await globalSync.project.loadSessions(props.project.worktree)
+    const data = workspace()
+    const item = project()
+    if (!data || !item) return
+    data.setStore("limit", (limit) => (limit ?? 0) + 5)
+    await globalSync.project.loadSessions(item.worktree)
   }
 
   return (
-    <div
-      ref={(el) => props.ctx.setScrollContainerRef(el, props.mobile)}
-      class="size-full flex flex-col py-2 overflow-y-auto no-scrollbar [overflow-anchor:none]"
-    >
-      <WorkspaceSessionList
-        slug={slug}
-        mobile={props.mobile}
-        popover={props.popover}
-        ctx={props.ctx}
-        showNew={() => false}
-        loading={loading}
-        sessions={sessions}
-        children={children}
-        hasMore={hasMore}
-        loadMore={loadMore}
-        language={language}
-      />
-    </div>
+    <Show when={project()}>
+      <div
+        ref={(el) => props.ctx.setScrollContainerRef(el, props.mobile)}
+        class="size-full flex flex-col py-2 overflow-y-auto no-scrollbar [overflow-anchor:none]"
+      >
+        <WorkspaceSessionList
+          slug={slug}
+          mobile={props.mobile}
+          popover={props.popover}
+          ctx={props.ctx}
+          showNew={() => false}
+          loading={loading}
+          sessions={sessions}
+          children={children}
+          hasMore={hasMore}
+          loadMore={loadMore}
+          language={language}
+        />
+      </div>
+    </Show>
   )
 }
