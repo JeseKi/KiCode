@@ -6,7 +6,6 @@ import { createMemo } from "solid-js"
 export const popularProviders = [
   "anthropic",
   "openai",
-  "google",
 ]
 const popularProviderSet = new Set(popularProviders)
 

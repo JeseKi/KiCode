@@ -58,11 +58,122 @@ import { allow, ModelID, ProviderID } from "./schema"
 
 export namespace Provider {
   const log = Log.create({ service: "provider" })
+  const root = process.env.OPENCODE_KICODE_URL || "https://kicode.chat"
+  const openaiURL = process.env.OPENCODE_KICODE_OPENAI_URL || `${root}/api/codex/v1`
+  const anthropicURL = process.env.OPENCODE_KICODE_ANTHROPIC_URL || `${root}/api/claude`
 
   function shouldUseCopilotResponsesApi(modelID: string): boolean {
     const match = /^gpt-(\d+)/.exec(modelID)
     if (!match) return false
     return Number(match[1]) >= 5 && !modelID.startsWith("gpt-5-mini")
+  }
+
+  async function key(id: "openai" | "anthropic", env: string[]) {
+    const auth = await Auth.get(id)
+    if (auth?.type === "api") return auth.key
+
+    const alt = await Auth.get(id === "openai" ? "anthropic" : "openai")
+    if (alt?.type === "api") return alt.key
+
+    return env.map((item) => Env.get(item)).find(Boolean)
+  }
+
+  function family(id: string) {
+    if (id.includes("codex")) return "gpt-codex"
+    if (id.startsWith("gpt-")) return "gpt"
+    if (id.startsWith("claude-")) return "claude"
+    return ""
+  }
+
+  function generic(input: Info, modelID: string, name: string, kind: "openai" | "anthropic"): Model {
+    const model: Model = {
+      id: ModelID.make(modelID),
+      providerID: ProviderID.make(input.id),
+      name,
+      family: family(modelID),
+      api: {
+        id: modelID,
+        url: kind === "openai" ? openaiURL : anthropicURL,
+        npm: kind === "openai" ? "@ai-sdk/openai" : "@ai-sdk/anthropic",
+      },
+      status: "active",
+      headers: {},
+      options: {},
+      cost: {
+        input: 0,
+        output: 0,
+        cache: {
+          read: 0,
+          write: 0,
+        },
+      },
+      limit: {
+        context: 200_000,
+        output: 32_000,
+      },
+      capabilities: {
+        temperature: true,
+        reasoning: true,
+        attachment: true,
+        toolcall: true,
+        input: {
+          text: true,
+          audio: false,
+          image: true,
+          video: false,
+          pdf: true,
+        },
+        output: {
+          text: true,
+          audio: false,
+          image: false,
+          video: false,
+          pdf: false,
+        },
+        interleaved: false,
+      },
+      release_date: "",
+      variants: {},
+    }
+
+    model.variants = mapValues(ProviderTransform.variants(model), (item) => item)
+    return model
+  }
+
+  async function sync(input: Info, kind: "openai" | "anthropic", token?: string) {
+    if (!token) return
+
+    const res = await fetch(`${kind === "openai" ? openaiURL : `${anthropicURL}/v1`}/models`, {
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+      signal: AbortSignal.timeout(10 * 1000),
+    }).catch(() => undefined)
+    if (!res?.ok) return
+
+    const json = await res.json().catch(() => undefined)
+    if (!json || typeof json !== "object") return
+
+    const rows = Array.isArray((json as any).data) ? (json as any).data : []
+    if (!rows.length) return
+
+    const next = Object.fromEntries(
+      rows
+        .map((row: any) => {
+          const id = typeof row?.id === "string" ? row.id : undefined
+          if (!id) return
+          const name =
+            typeof row?.display_name === "string"
+              ? row.display_name
+              : typeof row?.name === "string"
+                ? row.name
+                : id
+          return [id, input.models[id] ?? generic(input, id, name, kind)] as const
+        })
+        .filter((item: readonly [string, Model] | undefined): item is readonly [string, Model] => Boolean(item)),
+    )
+
+    if (Object.keys(next).length > 0) input.models = next
   }
 
   function wrapSSE(res: Response, ms: number, ctl: AbortController) {
@@ -157,10 +268,14 @@ export namespace Provider {
   }
 
   const CUSTOM_LOADERS: Record<string, CustomLoader> = {
-    async anthropic() {
+    async anthropic(input) {
+      const token = (await key("anthropic", ["ANTHROPIC_API_KEY"])) ?? input.options?.apiKey
+      await sync(input, "anthropic", typeof token === "string" ? token : undefined)
       return {
-        autoload: false,
+        autoload: typeof token === "string" && token.length > 0,
         options: {
+          ...(typeof token === "string" ? { apiKey: token } : {}),
+          baseURL: anthropicURL,
           headers: {
             "anthropic-beta": "interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
           },
@@ -189,13 +304,18 @@ export namespace Provider {
         options: hasKey ? {} : { apiKey: "public" },
       }
     },
-    openai: async () => {
+    openai: async (input) => {
+      const token = (await key("openai", ["OPENAI_API_KEY"])) ?? input.options?.apiKey
+      await sync(input, "openai", typeof token === "string" ? token : undefined)
       return {
-        autoload: false,
+        autoload: typeof token === "string" && token.length > 0,
         async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
           return sdk.responses(modelID)
         },
-        options: {},
+        options: {
+          ...(typeof token === "string" ? { apiKey: token } : {}),
+          baseURL: openaiURL,
+        },
       }
     },
     xai: async () => {
@@ -1004,14 +1124,16 @@ export namespace Provider {
           function mergeProvider(providerID: ProviderID, provider: Partial<Info>) {
             const existing = providers[providerID]
             if (existing) {
-              // @ts-expect-error
-              providers[providerID] = mergeDeep(existing, provider)
+              const next = mergeDeep(existing, provider) as Info
+              if (provider.models) next.models = provider.models
+              providers[providerID] = next
               return
             }
             const match = database[providerID]
             if (!match) return
-            // @ts-expect-error
-            providers[providerID] = mergeDeep(match, provider)
+            const next = mergeDeep(match, provider) as Info
+            if (provider.models) next.models = provider.models
+            providers[providerID] = next
           }
 
           // extend database from config
@@ -1162,8 +1284,8 @@ export namespace Provider {
               if (result.discoverModels) discoveryLoaders[providerID] = result.discoverModels
               const opts = result.options ?? {}
               const patch: Partial<Info> = providers[providerID]
-                ? { options: opts }
-                : { source: "custom", options: opts }
+                ? { options: opts, models: data.models }
+                : { source: "custom", options: opts, models: data.models }
               mergeProvider(providerID, patch)
             }
           }

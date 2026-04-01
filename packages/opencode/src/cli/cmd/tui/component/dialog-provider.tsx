@@ -37,8 +37,8 @@ export function createDialogProviderOptions() {
         value: provider.id,
         description: {
           opencode: "(Recommended)",
-          anthropic: "(API key)",
-          openai: "(ChatGPT Plus/Pro or API key)",
+          anthropic: "(KiCode account)",
+          openai: "(KiCode account)",
           "opencode-go": "Low cost subscription for everyone",
         }[provider.id],
         category: provider.id in PROVIDER_PRIORITY ? "Popular" : "Other",
@@ -165,10 +165,17 @@ function AutoMethod(props: AutoMethodProps) {
           esc
         </text>
       </box>
-      <box gap={1}>
-        <Link href={props.authorization.url} fg={theme.primary} />
-        <text fg={theme.textMuted}>{props.authorization.instructions}</text>
-      </box>
+      <Show
+        when={props.authorization.url}
+        fallback={<text fg={theme.textMuted}>{props.authorization.instructions}</text>}
+      >
+        <box gap={1}>
+          <Link href={props.authorization.url} fg={theme.primary} />
+          <Show when={props.authorization.instructions}>
+            <text fg={theme.textMuted}>{props.authorization.instructions}</text>
+          </Show>
+        </box>
+      </Show>
       <text fg={theme.textMuted}>Waiting for authorization...</text>
       <text fg={theme.text}>
         c <span style={{ fg: theme.textMuted }}>copy</span>

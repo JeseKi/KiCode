@@ -9,7 +9,7 @@ import { ProviderIcon } from "@opencode-ai/ui/provider-icon"
 import { Spinner } from "@opencode-ai/ui/spinner"
 import { TextField } from "@opencode-ai/ui/text-field"
 import { showToast } from "@opencode-ai/ui/toast"
-import { createEffect, createMemo, createResource, Match, onCleanup, onMount, Switch } from "solid-js"
+import { createEffect, createMemo, createResource, Match, onCleanup, onMount, Show, Switch } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { Link } from "@/components/link"
 import { useGlobalSDK } from "@/context/global-sdk"
@@ -525,10 +525,8 @@ export function DialogConnectProvider(props: { provider: string }) {
   function OAuthAutoView() {
     const code = createMemo(() => {
       const instructions = store.authorization?.instructions
-      if (instructions?.includes(":")) {
-        return instructions.split(":")[1]?.trim()
-      }
-      return instructions
+      if (!instructions || !instructions.includes(":")) return ""
+      return instructions.split(":")[1]?.trim() ?? ""
     })
 
     onMount(() => {
@@ -556,17 +554,26 @@ export function DialogConnectProvider(props: { provider: string }) {
     return (
       <div class="flex flex-col gap-6">
         <div class="text-14-regular text-text-base">
-          {language.t("provider.connect.oauth.auto.visit.prefix")}
-          <Link href={store.authorization!.url}>{language.t("provider.connect.oauth.auto.visit.link")}</Link>
-          {language.t("provider.connect.oauth.auto.visit.suffix", { provider: provider().name })}
+          <Switch>
+            <Match when={store.authorization!.url}>
+              <>
+                {language.t("provider.connect.oauth.auto.visit.prefix")}
+                <Link href={store.authorization!.url}>{language.t("provider.connect.oauth.auto.visit.link")}</Link>
+                {language.t("provider.connect.oauth.auto.visit.suffix", { provider: provider().name })}
+              </>
+            </Match>
+            <Match when={true}>{store.authorization!.instructions}</Match>
+          </Switch>
         </div>
-        <TextField
-          label={language.t("provider.connect.oauth.auto.confirmationCode")}
-          class="font-mono"
-          value={code()}
-          readOnly
-          copyable
-        />
+        <Show when={code()}>
+          <TextField
+            label={language.t("provider.connect.oauth.auto.confirmationCode")}
+            class="font-mono"
+            value={code()}
+            readOnly
+            copyable
+          />
+        </Show>
         <div class="text-14-regular text-text-base flex items-center gap-4">
           <Spinner />
           <span>{language.t("provider.connect.status.waiting")}</span>

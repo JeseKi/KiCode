@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test"
+import { test, expect, mock } from "bun:test"
 import path from "path"
 
 import { tmpdir } from "../fixture/fixture"
@@ -6,6 +6,7 @@ import { Instance } from "../../src/project/instance"
 import { Provider } from "../../src/provider/provider"
 import { ProviderID, ModelID } from "../../src/provider/schema"
 import { Env } from "../../src/env"
+import { Auth } from "../../src/auth"
 
 test("provider loaded from env variable", async () => {
   await using tmp = await tmpdir({
@@ -59,6 +60,70 @@ test("provider loaded from config with apiKey option", async () => {
       expect(providers[ProviderID.anthropic]).toBeDefined()
     },
   })
+})
+
+test("kicode token syncs openai and anthropic models", async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = mock((url: string | URL | Request, init?: RequestInit) => {
+    const text = url.toString()
+    if (text === "https://kicode.chat/api/codex/v1/models") {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            object: "list",
+            data: [{ id: "gpt-5.2" }],
+          }),
+          { status: 200 },
+        ),
+      )
+    }
+    if (text === "https://kicode.chat/api/claude/v1/models") {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: [{ id: "claude-sonnet-4-20250514", display_name: "Claude Sonnet 4" }],
+            has_more: false,
+          }),
+          { status: 200 },
+        ),
+      )
+    }
+    return originalFetch(url, init)
+  }) as unknown as typeof fetch
+
+  await using tmp = await tmpdir({
+    init: async (dir) => {
+      await Bun.write(
+        path.join(dir, "opencode.json"),
+        JSON.stringify({
+          $schema: "https://opencode.ai/config.json",
+        }),
+      )
+    },
+  })
+
+  try {
+    await Auth.set("openai", {
+      type: "api",
+      key: "test-token",
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const providers = await Provider.list()
+        expect(providers[ProviderID.openai]).toBeDefined()
+        expect(providers[ProviderID.anthropic]).toBeDefined()
+        expect(providers[ProviderID.openai].options.baseURL).toBe("https://kicode.chat/api/codex/v1")
+        expect(providers[ProviderID.anthropic].options.baseURL).toBe("https://kicode.chat/api/claude")
+        expect(Object.keys(providers[ProviderID.openai].models)).toEqual(["gpt-5.2"])
+        expect(Object.keys(providers[ProviderID.anthropic].models)).toEqual(["claude-sonnet-4-20250514"])
+      },
+    })
+  } finally {
+    globalThis.fetch = originalFetch
+    await Auth.remove("openai")
+    await Auth.remove("anthropic")
+  }
 })
 
 test("disabled_providers excludes provider", async () => {

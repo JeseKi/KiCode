@@ -5,13 +5,14 @@ import { Config } from "../../config/config"
 import { Provider } from "../../provider/provider"
 import { ModelsDev } from "../../provider/models"
 import { ProviderAuth } from "../../provider/auth"
-import { allow, ProviderID } from "../../provider/schema"
+import { ProviderID } from "../../provider/schema"
 import { mapValues } from "remeda"
 import { errors } from "../error"
 import { lazy } from "../../util/lazy"
 import { Log } from "../../util/log"
 
 const log = Log.create({ service: "server" })
+const visible = new Set(["anthropic", "openai"])
 
 export const ProviderRoutes = lazy(() =>
   new Hono()
@@ -46,7 +47,7 @@ export const ProviderRoutes = lazy(() =>
         const allProviders = await ModelsDev.get()
         const filteredProviders: Record<string, (typeof allProviders)[string]> = {}
         for (const [key, value] of Object.entries(allProviders)) {
-          if (allow(key) && (enabled ? enabled.has(key) : true) && !disabled.has(key)) {
+          if (visible.has(key) && (enabled ? enabled.has(key) : true) && !disabled.has(key)) {
             filteredProviders[key] = value
           }
         }
@@ -54,7 +55,7 @@ export const ProviderRoutes = lazy(() =>
         const connected = await Provider.list()
         const providers = Object.assign(
           mapValues(filteredProviders, (x) => Provider.fromModelsDevProvider(x)),
-          connected,
+          Object.fromEntries(Object.entries(connected).filter(([id]) => visible.has(id))),
         )
         return c.json({
           all: Object.values(providers),
@@ -84,7 +85,7 @@ export const ProviderRoutes = lazy(() =>
         const all = await ProviderAuth.methods()
         const out: Record<string, z.infer<typeof ProviderAuth.Method>[]> = {}
         for (const [id, methods] of Object.entries(all)) {
-          if (allow(id)) out[id] = methods
+          if (visible.has(id)) out[id] = methods
         }
         return c.json(out)
       },
