@@ -16,6 +16,7 @@ import { Env } from "../env"
 import { Instance } from "../project/instance"
 import { Flag } from "../flag/flag"
 import { iife } from "@/util/iife"
+import { KiCodeAuth } from "@/kicode/auth"
 import { Global } from "../global"
 import path from "path"
 import { Filesystem } from "../util/filesystem"
@@ -69,6 +70,9 @@ export namespace Provider {
   }
 
   async function key(id: "openai" | "anthropic", env: string[]) {
+    const session = await KiCodeAuth.session()
+    if (session?.access) return session.access
+
     const auth = await Auth.get(id)
     if (auth?.type === "api") return auth.key
 

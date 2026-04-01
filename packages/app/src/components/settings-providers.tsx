@@ -10,6 +10,7 @@ import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { DialogConnectProvider } from "./dialog-connect-provider"
 import { SettingsList } from "./settings-list"
+import { useAuth } from "@/context/auth"
 
 type ProviderSource = "env" | "api" | "config" | "custom"
 type ProviderItem = ReturnType<ReturnType<typeof useProviders>["connected"]>[number]
@@ -26,6 +27,7 @@ export const SettingsProviders: Component = () => {
   const globalSDK = useGlobalSDK()
   const globalSync = useGlobalSync()
   const providers = useProviders()
+  const auth = useAuth()
 
   const connected = createMemo(() => providers.connected())
 
@@ -46,7 +48,11 @@ export const SettingsProviders: Component = () => {
     return
   }
 
+  const isKiCode = (item: ProviderItem) =>
+    auth.authenticated() && source(item) === "custom" && (item.id === "openai" || item.id === "anthropic")
+
   const type = (item: ProviderItem) => {
+    if (isKiCode(item)) return "KiCode"
     const current = source(item)
     if (current === "env") return language.t("settings.providers.tag.environment")
     if (current === "api") return language.t("provider.connect.method.apiKey")
@@ -93,6 +99,13 @@ export const SettingsProviders: Component = () => {
   }
 
   const disconnect = async (providerID: string, name: string) => {
+    if (auth.authenticated() && (providerID === "openai" || providerID === "anthropic")) {
+      await auth.logout().catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+      })
+      return
+    }
     if (isConfigCustom(providerID)) {
       await globalSDK.client.auth.remove({ providerID }).catch(() => undefined)
       await disableProvider(providerID, name)

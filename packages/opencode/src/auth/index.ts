@@ -12,6 +12,14 @@ const file = path.join(Global.Path.data, "auth.json")
 const fail = (message: string) => (cause: unknown) => new Auth.AuthError({ message, cause })
 
 export namespace Auth {
+  export class Session extends Schema.Class<Session>("SessionAuth")({
+    type: Schema.Literal("session"),
+    username: Schema.String,
+    refresh: Schema.String,
+    access: Schema.String,
+    expires: Schema.Number,
+  }) {}
+
   export class Oauth extends Schema.Class<Oauth>("OAuth")({
     type: Schema.Literal("oauth"),
     refresh: Schema.String,
@@ -32,7 +40,10 @@ export namespace Auth {
     token: Schema.String,
   }) {}
 
-  const _Info = Schema.Union([Oauth, Api, WellKnown]).annotate({ discriminator: "type", identifier: "Auth" })
+  const _Info = Schema.Union([Session, Oauth, Api, WellKnown]).annotate({
+    discriminator: "type",
+    identifier: "Auth",
+  })
   export const Info = Object.assign(_Info, { zod: zod(_Info) })
   export type Info = Schema.Schema.Type<typeof _Info>
 

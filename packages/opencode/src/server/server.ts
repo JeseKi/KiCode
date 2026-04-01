@@ -12,6 +12,7 @@ import { WorkspaceRouterMiddleware } from "./router"
 import { websocket } from "hono/bun"
 import { errors } from "./error"
 import { GlobalRoutes } from "./routes/global"
+import { KiCodeRoutes } from "./routes/kicode"
 import { MDNS } from "./mdns"
 import { lazy } from "@/util/lazy"
 import { errorHandler } from "./middleware"
@@ -97,6 +98,7 @@ export namespace Server {
         if (skipCompress(c.req.path, c.req.method)) return next()
         return zipped(c, next)
       })
+      .route("/kicode", KiCodeRoutes())
       .route("/global", GlobalRoutes())
       .put(
         "/auth/:providerID",
