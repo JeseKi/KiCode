@@ -15,7 +15,6 @@ import { Plugin } from "@/plugin"
 import { SystemPrompt } from "./system"
 import { Flag } from "@/flag/flag"
 import { Permission } from "@/permission"
-import { Auth } from "@/auth"
 import { Installation } from "@/installation"
 
 export namespace LLM {
@@ -99,14 +98,12 @@ export namespace LLM {
       modelID: input.model.id,
       providerID: input.model.providerID,
     })
-    const [language, cfg, provider, auth] = await Promise.all([
+    const [language, cfg, provider] = await Promise.all([
       Provider.getLanguage(input.model),
       Config.get(),
       Provider.getProvider(input.model.providerID),
-      Auth.get(input.model.providerID),
     ])
-    // TODO: move this to a proper hook
-    const isOpenaiOauth = provider.id === "openai" && auth?.type === "oauth"
+    const isOpenai = provider.id === "openai"
 
     const system: string[] = []
     system.push(
@@ -150,12 +147,12 @@ export namespace LLM {
       mergeDeep(input.agent.options),
       mergeDeep(variant),
     )
-    if (isOpenaiOauth) {
+    if (isOpenai) {
       options.instructions = system.join("\n")
     }
 
     const isWorkflow = language instanceof GitLabWorkflowLanguageModel
-    const messages = isOpenaiOauth
+    const messages = isOpenai
       ? input.messages
       : isWorkflow
         ? input.messages
@@ -203,7 +200,7 @@ export namespace LLM {
     )
 
     const maxOutputTokens =
-      isOpenaiOauth || provider.id.includes("github-copilot")
+      isOpenai || provider.id.includes("github-copilot")
         ? undefined
         : ProviderTransform.maxOutputTokens(input.model)
 

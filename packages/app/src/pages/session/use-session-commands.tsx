@@ -336,6 +336,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
         title: language.t("toast.model.none.title"),
         description: language.t("toast.model.none.description"),
       })
+      chooseModel()
       return
     }
 

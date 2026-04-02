@@ -27,7 +27,6 @@ import { IconButton } from "@opencode-ai/ui/icon-button"
 import { Select } from "@opencode-ai/ui/select"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { ModelSelectorPopover } from "@/components/dialog-select-model"
-import { useProviders } from "@/hooks/use-providers"
 import { useCommand } from "@/context/command"
 import { Persist, persisted } from "@/utils/persist"
 import { usePermission } from "@/context/permission"
@@ -108,7 +107,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   const layout = useLayout()
   const comments = useComments()
   const dialog = useDialog()
-  const providers = useProviders()
   const command = useCommand()
   const permission = usePermission()
   const language = useLanguage()
@@ -1478,74 +1476,36 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                   </TooltipKeybind>
                 </div>
                 <div data-component="prompt-model-control">
-                  <Show
-                    when={providers.paid().length > 0}
-                    fallback={
-                      <TooltipKeybind
-                        placement="top"
-                        gutter={4}
-                        title={language.t("command.model.choose")}
-                        keybind={command.keybind("model.choose")}
-                      >
-                        <Button
-                          data-action="prompt-model"
-                          as="div"
-                          variant="ghost"
-                          size="normal"
-                          class="min-w-0 max-w-[320px] text-13-regular text-text-base group"
-                          style={control()}
-                          onClick={() => {
-                            void import("@/components/dialog-select-model-unpaid").then((x) => {
-                              dialog.show(() => <x.DialogSelectModelUnpaid model={local.model} />)
-                            })
-                          }}
-                        >
-                          <Show when={local.model.current()?.provider?.id}>
-                            <ProviderIcon
-                              id={local.model.current()?.provider?.id ?? ""}
-                              class="size-4 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity duration-150"
-                              style={{ "will-change": "opacity", transform: "translateZ(0)" }}
-                            />
-                          </Show>
-                          <span class="truncate">
-                            {local.model.current()?.name ?? language.t("dialog.model.select.title")}
-                          </span>
-                          <Icon name="chevron-down" size="small" class="shrink-0" />
-                        </Button>
-                      </TooltipKeybind>
-                    }
+                  <TooltipKeybind
+                    placement="top"
+                    gutter={4}
+                    title={language.t("command.model.choose")}
+                    keybind={command.keybind("model.choose")}
                   >
-                    <TooltipKeybind
-                      placement="top"
-                      gutter={4}
-                      title={language.t("command.model.choose")}
-                      keybind={command.keybind("model.choose")}
+                    <ModelSelectorPopover
+                      model={local.model}
+                      triggerAs={Button}
+                      triggerProps={{
+                        variant: "ghost",
+                        size: "normal",
+                        style: control(),
+                        class: "min-w-0 max-w-[320px] text-13-regular text-text-base group",
+                        "data-action": "prompt-model",
+                      }}
                     >
-                      <ModelSelectorPopover
-                        model={local.model}
-                        triggerAs={Button}
-                        triggerProps={{
-                          variant: "ghost",
-                          size: "normal",
-                          style: control(),
-                          class: "min-w-0 max-w-[320px] text-13-regular text-text-base group",
-                          "data-action": "prompt-model",
-                        }}
-                      >
-                        <Show when={local.model.current()?.provider?.id}>
-                          <ProviderIcon
-                            id={local.model.current()?.provider?.id ?? ""}
-                            class="size-4 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity duration-150"
-                            style={{ "will-change": "opacity", transform: "translateZ(0)" }}
-                          />
-                        </Show>
-                        <span class="truncate">
-                          {local.model.current()?.name ?? language.t("dialog.model.select.title")}
-                        </span>
-                        <Icon name="chevron-down" size="small" class="shrink-0" />
-                      </ModelSelectorPopover>
-                    </TooltipKeybind>
-                  </Show>
+                      <Show when={local.model.current()?.provider?.id}>
+                        <ProviderIcon
+                          id={local.model.current()?.provider?.id ?? ""}
+                          class="size-4 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity duration-150"
+                          style={{ "will-change": "opacity", transform: "translateZ(0)" }}
+                        />
+                      </Show>
+                      <span class="truncate">
+                        {local.model.current()?.name ?? language.t("dialog.model.select.title")}
+                      </span>
+                      <Icon name="chevron-down" size="small" class="shrink-0" />
+                    </ModelSelectorPopover>
+                  </TooltipKeybind>
                 </div>
                 <div data-component="prompt-variant-control">
                   <TooltipKeybind

@@ -78,6 +78,7 @@ import { PermissionPrompt } from "./permission"
 import { QuestionPrompt } from "./question"
 import { DialogExportOptions } from "../../ui/dialog-export-options"
 import { formatTranscript } from "../../util/transcript"
+import { DialogModel } from "../../component/dialog-model"
 import { UI } from "@/cli/ui.ts"
 import { useTuiConfig } from "../../context/tui-config"
 
@@ -461,9 +462,10 @@ export function Session() {
         if (!selectedModel) {
           toast.show({
             variant: "warning",
-            message: "Connect a provider to summarize this session",
+            message: "Select a model to summarize this session",
             duration: 3000,
           })
+          dialog.replace(() => <DialogModel />)
           return
         }
         sdk.client.session.summarize({

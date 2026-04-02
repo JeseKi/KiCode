@@ -432,7 +432,7 @@ export const dict = {
   "toast.permissions.autoaccept.off.description": "Permission requests will require approval",
 
   "toast.model.none.title": "No model selected",
-  "toast.model.none.description": "Connect a provider to summarize this session",
+  "toast.model.none.description": "Choose a model to summarize this session",
 
   "toast.file.loadFailed.title": "Failed to load file",
   "toast.file.listFailed.title": "Failed to list files",
