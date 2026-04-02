@@ -846,6 +846,53 @@ describe("session.message-v2.fromError", () => {
     })
   })
 
+  test("rewrites insufficient balance detail with recharge guidance", () => {
+    const error = new APICallError({
+      message: "Bad Request",
+      url: "https://kicode.chat/api/codex/v1/chat/completions",
+      requestBodyValues: {},
+      statusCode: 400,
+      responseHeaders: { "content-type": "application/json" },
+      responseBody: JSON.stringify({
+        detail: "余额不足",
+      }),
+      isRetryable: false,
+    })
+    const result = MessageV2.fromError(error, { providerID })
+
+    expect(result).toStrictEqual({
+      name: "APIError",
+      data: {
+        message: "Bad Request: 余额不足，请前往 https://kicode.chat/pricing 充值后再试。",
+        statusCode: 400,
+        isRetryable: false,
+        responseHeaders: { "content-type": "application/json" },
+        responseBody: JSON.stringify({
+          detail: "余额不足",
+        }),
+        metadata: {
+          url: "https://kicode.chat/api/codex/v1/chat/completions",
+        },
+      },
+    })
+  })
+
+  test("rewrites insufficient balance stream error with recharge guidance", () => {
+    const input = {
+      detail: "余额不足",
+    }
+    const result = MessageV2.fromError(input, { providerID })
+
+    expect(result).toStrictEqual({
+      name: "APIError",
+      data: {
+        message: "余额不足，请前往 https://kicode.chat/pricing 充值后再试。",
+        isRetryable: false,
+        responseBody: JSON.stringify(input),
+      },
+    })
+  })
+
   test("detects context overflow from APICallError provider messages", () => {
     const cases = [
       "prompt is too long: 213462 tokens > 200000 maximum",

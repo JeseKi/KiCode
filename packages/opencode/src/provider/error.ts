@@ -4,6 +4,9 @@ import { iife } from "@/util/iife"
 import type { ProviderID } from "./schema"
 
 export namespace ProviderError {
+  const pricing = "https://kicode.chat/pricing"
+  const recharge = `余额不足，请前往 ${pricing} 充值后再试。`
+
   // Adapted from overflow detection patterns in:
   // https://github.com/badlogic/pi-mono/blob/main/packages/ai/src/utils/overflow.ts
   const OVERFLOW_PATTERNS = [
@@ -46,11 +49,28 @@ export namespace ProviderError {
     return /^4(00|13)\s*(status code)?\s*\(no body\)/i.test(message)
   }
 
+  function isBalance(input: unknown) {
+    if (typeof input !== "string") return false
+    return /余额不足|insufficient balance|balance insufficient|insufficient credits/i.test(input)
+  }
+
+  function rewrite(input: unknown) {
+    if (isBalance(input)) return recharge
+    return typeof input === "string" ? input : undefined
+  }
+
   function message(providerID: ProviderID, e: APICallError) {
     return iife(() => {
       const msg = e.message
       if (msg === "") {
-        if (e.responseBody) return e.responseBody
+        if (e.responseBody) {
+          const body = json(e.responseBody)
+          if (body) {
+            const text = rewrite(body.detail) || rewrite(body.message) || rewrite(body.error) || rewrite(body.error?.message)
+            if (text) return text
+          }
+          return e.responseBody
+        }
         if (e.statusCode) {
           const err = STATUS_CODES[e.statusCode]
           if (err) return err
@@ -65,11 +85,14 @@ export namespace ProviderError {
       try {
         const body = JSON.parse(e.responseBody)
         // try to extract common error message fields
-        const errMsg = body.message || body.error || body.error?.message
-        if (errMsg && typeof errMsg === "string") {
+        const errMsg = rewrite(body.detail) || rewrite(body.message) || rewrite(body.error) || rewrite(body.error?.message)
+        if (errMsg) {
           return `${msg}: ${errMsg}`
         }
       } catch {}
+
+      const text = rewrite(msg)
+      if (text) return text
 
       // If responseBody is HTML (e.g. from a gateway or proxy error page),
       // provide a human-readable message instead of dumping raw markup
@@ -119,6 +142,15 @@ export namespace ProviderError {
   export function parseStreamError(input: unknown): ParsedStreamError | undefined {
     const body = json(input)
     if (!body) return
+
+    const text = rewrite(body.detail) || rewrite(body.message) || rewrite(body.error) || rewrite(body.error?.message)
+    if (text)
+      return {
+        type: "api_error",
+        message: text,
+        isRetryable: false,
+        responseBody: JSON.stringify(body),
+      }
 
     const responseBody = JSON.stringify(body)
     if (body.type !== "error") return
