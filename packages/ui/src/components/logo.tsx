@@ -9,8 +9,11 @@ export const Mark = (props: { class?: string }) => {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path data-slot="logo-logo-mark-shadow" d="M12 16H4V8H12V16Z" fill="var(--icon-weak-base)" />
-      <path data-slot="logo-logo-mark-o" d="M12 4H4V16H12V4ZM16 20H0V0H16V20Z" fill="var(--icon-strong-base)" />
+      <g transform="translate(0 2) scale(0.1666667)">
+        <rect x="4" y="4" width="88" height="88" rx="24" fill="#C46D42" />
+        <path d="M29 28H40V46.5L57.5 28H71L52 48L72 68H58L40 49.5V68H29V28Z" fill="#FFF6EA" />
+        <rect x="64" y="14" width="18" height="7" rx="3.5" fill="#2E221A" />
+      </g>
     </svg>
   )
 }
@@ -25,8 +28,11 @@ export const Splash = (props: Pick<ComponentProps<"svg">, "ref" | "class">) => {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path d="M60 80H20V40H60V80Z" fill="var(--icon-base)" />
-      <path d="M60 20H20V80H60V20ZM80 100H0V0H80V100Z" fill="var(--icon-strong-base)" />
+      <g transform="translate(8 18) scale(0.6666667)">
+        <rect x="4" y="4" width="88" height="88" rx="24" fill="#C46D42" />
+        <path d="M29 28H40V46.5L57.5 28H71L52 48L72 68H58L40 49.5V68H29V28Z" fill="#FFF6EA" />
+        <rect x="64" y="14" width="18" height="7" rx="3.5" fill="#2E221A" />
+      </g>
     </svg>
   )
 }
@@ -35,28 +41,26 @@ export const Logo = (props: { class?: string }) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 234 42"
+      viewBox="0 0 226 42"
       fill="none"
       classList={{ [props.class ?? ""]: !!props.class }}
     >
-      <g>
-        <path d="M18 30H6V18H18V30Z" fill="var(--icon-weak-base)" />
-        <path d="M18 12H6V30H18V12ZM24 36H0V6H24V36Z" fill="var(--icon-base)" />
-        <path d="M48 30H36V18H48V30Z" fill="var(--icon-weak-base)" />
-        <path d="M36 30H48V12H36V30ZM54 36H36V42H30V6H54V36Z" fill="var(--icon-base)" />
-        <path d="M84 24V30H66V24H84Z" fill="var(--icon-weak-base)" />
-        <path d="M84 24H66V30H84V36H60V6H84V24ZM66 18H78V12H66V18Z" fill="var(--icon-base)" />
-        <path d="M108 36H96V18H108V36Z" fill="var(--icon-weak-base)" />
-        <path d="M108 12H96V36H90V6H108V12ZM114 36H108V12H114V36Z" fill="var(--icon-base)" />
-        <path d="M144 30H126V18H144V30Z" fill="var(--icon-weak-base)" />
-        <path d="M144 12H126V30H144V36H120V6H144V12Z" fill="var(--icon-strong-base)" />
-        <path d="M168 30H156V18H168V30Z" fill="var(--icon-weak-base)" />
-        <path d="M168 12H156V30H168V12ZM174 36H150V6H174V36Z" fill="var(--icon-strong-base)" />
-        <path d="M198 30H186V18H198V30Z" fill="var(--icon-weak-base)" />
-        <path d="M198 12H186V30H198V12ZM204 36H180V6H198V0H204V36Z" fill="var(--icon-strong-base)" />
-        <path d="M234 24V30H216V24H234Z" fill="var(--icon-weak-base)" />
-        <path d="M216 12V18H228V12H216ZM234 24H216V30H234V36H210V6H234V24Z" fill="var(--icon-strong-base)" />
+      <g transform="scale(0.4375)">
+        <rect x="4" y="4" width="88" height="88" rx="24" fill="#C46D42" />
+        <path d="M29 28H40V46.5L57.5 28H71L52 48L72 68H58L40 49.5V68H29V28Z" fill="#FFF6EA" />
+        <rect x="64" y="14" width="18" height="7" rx="3.5" fill="#2E221A" />
       </g>
+      <text
+        x="52"
+        y="29"
+        fill="var(--icon-strong-base)"
+        font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        font-size="24"
+        font-weight="700"
+        letter-spacing="-0.04em"
+      >
+        KiCode
+      </text>
     </svg>
   )
 }

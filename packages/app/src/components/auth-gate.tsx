@@ -11,8 +11,13 @@ const mail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const copy = {
   en: {
+    badge: "Desktop access",
     title: "Sign in to KiCode",
     subtitle: "The app unlocks model access from your KiCode account after login.",
+    note: "Use one account to manage model access, sign-in state, and provider availability in one place.",
+    quota: "Unified balance",
+    ready: "Ready to use",
+    safe: "Data security",
     login: "Login",
     register: "Register",
     username: "Username",
@@ -42,8 +47,13 @@ const copy = {
     mismatch: "Passwords do not match",
   },
   zh: {
+    badge: "桌面端访问",
     title: "登录 KiCode",
-    subtitle: "应用登录后会自动使用你的 KiCode 账户 token 访问模型。",
+    subtitle: "应用登录后会自动使用你的 KiCode 账户额度访问模型。",
+    note: "通过一个账户即可直接进行模型访问和调用智能体，让您的体验更加丝滑。",
+    quota: "统一额度",
+    ready: "开箱即用",
+    safe: "数据安全",
     login: "登录",
     register: "注册",
     username: "用户名",
@@ -184,27 +194,39 @@ export function AuthGate() {
   return (
     <div class="min-h-dvh bg-background-base px-6 py-10 text-text-strong">
       <div class="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-[1080px] items-center justify-center">
-        <div class="grid w-full max-w-[920px] gap-10 rounded-[28px] border border-border-weak-base bg-surface-base p-6 shadow-xs-border-base lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
-          <div class="flex flex-col justify-between gap-10 rounded-[20px] bg-[linear-gradient(135deg,var(--surface-raised-base),var(--surface-base))] p-6">
+        <div class="grid w-full max-w-[980px] gap-6 rounded-[28px] border border-border-weak-base bg-surface-base p-6 shadow-xs-border-base lg:grid-cols-2 lg:p-8">
+          <div class="flex h-full flex-col justify-between gap-10 rounded-[20px] bg-[linear-gradient(135deg,var(--surface-raised-base),var(--surface-base))] p-6 lg:p-7">
             <div class="flex flex-col gap-5">
+              <div class="inline-flex w-fit items-center gap-2 rounded-full border border-border-weak-base bg-surface-base px-3 py-1 text-12-medium text-text-base">
+                <div class="size-2 rounded-full bg-[#C46D42]" />
+                {text().badge}
+              </div>
               <Logo class="w-40 opacity-90" />
               <div class="flex flex-col gap-3">
                 <h1 class="text-28-medium tracking-tight text-text-strong">{text().title}</h1>
                 <p class="max-w-[34rem] text-14-regular leading-7 text-text-base">{text().subtitle}</p>
+                <p class="max-w-[36rem] text-13-regular leading-6 text-text-weak">{text().note}</p>
               </div>
             </div>
-            <div class="grid gap-3 text-13-regular text-text-weak sm:grid-cols-3">
+            <ul class="flex flex-col gap-3 text-14-medium text-text-strong">
+              {[text().quota, text().ready, text().safe].map((item) => (
+                <li class="flex items-center gap-3 rounded-2xl border border-border-weak-base bg-surface-base/80 px-4 py-3">
+                  <span class="text-base leading-none text-[#C46D42]">✅</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <div class="grid gap-3 text-13-regular text-text-weak sm:grid-cols-2">
               <div class="rounded-2xl border border-border-weak-base bg-surface-base px-4 py-3">OpenAI</div>
               <div class="rounded-2xl border border-border-weak-base bg-surface-base px-4 py-3">Anthropic</div>
-              <div class="rounded-2xl border border-border-weak-base bg-surface-base px-4 py-3">Auto refresh</div>
             </div>
           </div>
 
-          <div class="flex flex-col justify-center gap-6 rounded-[20px] bg-surface-base p-2">
-            <div class="inline-flex rounded-2xl bg-surface-raised-base p-1">
+          <div class="flex h-full flex-col justify-center gap-6 rounded-[20px] bg-surface-base p-3 lg:p-4">
+            <div class="grid w-full grid-cols-2 rounded-2xl bg-surface-raised-base p-1">
               <button
                 type="button"
-                class="min-w-28 rounded-[14px] px-4 py-2 text-14-medium transition-colors"
+                class="w-full rounded-[14px] px-4 py-2 text-14-medium transition-colors"
                 classList={{
                   "bg-surface-base text-text-strong shadow-xs-border-base": store.mode === "login",
                   "text-text-weak": store.mode !== "login",
@@ -218,7 +240,7 @@ export function AuthGate() {
               </button>
               <button
                 type="button"
-                class="min-w-28 rounded-[14px] px-4 py-2 text-14-medium transition-colors"
+                class="w-full rounded-[14px] px-4 py-2 text-14-medium transition-colors"
                 classList={{
                   "bg-surface-base text-text-strong shadow-xs-border-base": store.mode === "register",
                   "text-text-weak": store.mode !== "register",
