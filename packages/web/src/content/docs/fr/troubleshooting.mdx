@@ -39,7 +39,7 @@ Ce répertoire contient :
 
 ## Application de bureau
 
-OpenCode Desktop exécute un serveur OpenCode local (le side-car `opencode-cli`) en arrière-plan. La plupart des problèmes sont causés par un plugin qui se comporte mal, un cache corrompu ou un mauvais paramètre du serveur.
+KiCode Desktop exécute un serveur OpenCode local (le side-car `opencode-cli`) en arrière-plan. La plupart des problèmes sont causés par un plugin qui se comporte mal, un cache corrompu ou un mauvais paramètre du serveur.
 
 ### Vérifications rapides
 
@@ -88,7 +88,7 @@ Si l'application recommence à fonctionner, réactivez les plugins un par un pou
 
 Si la désactivation des plugins ne résout pas le problème (ou si l'installation d'un plugin est bloquée), videz le cache afin que OpenCode puisse le reconstruire.
 
-1. Quittez complètement OpenCode Desktop.
+1. Quittez complètement KiCode Desktop.
 2. Supprimez le répertoire cache :
 
 - **macOS** : Finder -> `Cmd+Shift+G` -> coller `~/.cache/opencode`
@@ -101,7 +101,7 @@ Si la désactivation des plugins ne résout pas le problème (ou si l'installati
 
 ### Résoudre les problèmes de connexion au serveur
 
-OpenCode Desktop peut soit démarrer son propre serveur local (par défaut), soit se connecter à un serveur URL que vous avez configuré.
+KiCode Desktop peut soit démarrer son propre serveur local (par défaut), soit se connecter à un serveur URL que vous avez configuré.
 
 Si vous voyez une boîte de dialogue **« Échec de la connexion »** (ou si l'application ne dépasse jamais l'écran de démarrage), recherchez un serveur personnalisé URL.
 
@@ -132,7 +132,7 @@ Sur Linux, certaines configurations Wayland peuvent provoquer des fenêtres vide
 
 ### Windows : exécution WebView2
 
-Sur Windows, OpenCode Desktop nécessite Microsoft Edge **WebView2 Runtime**. Si l'application s'ouvre sur une fenêtre vide ou ne démarre pas, installez/mettez à jour WebView2 et réessayez.
+Sur Windows, KiCode Desktop nécessite Microsoft Edge **WebView2 Runtime**. Si l'application s'ouvre sur une fenêtre vide ou ne démarre pas, installez/mettez à jour WebView2 et réessayez.
 
 ---
 
@@ -144,7 +144,7 @@ Si vous rencontrez des performances lentes, des problèmes d'accès aux fichiers
 
 ### Les notifications ne s'affichent pas
 
-OpenCode Desktop affiche uniquement les notifications système lorsque :
+KiCode Desktop affiche uniquement les notifications système lorsque :
 
 - les notifications sont activées pour OpenCode dans les paramètres de votre système d'exploitation, et
 - la fenêtre de l'application n'est pas ciblée.
@@ -156,7 +156,7 @@ OpenCode Desktop affiche uniquement les notifications système lorsque :
 Si l'application ne démarre pas et que vous ne pouvez pas effacer les paramètres depuis l'interface utilisateur, réinitialisez l'état enregistré de l'application de bureau.
 
 1. Quittez le bureau OpenCode.
-2. Recherchez et supprimez ces fichiers (ils se trouvent dans le répertoire de données de l'application OpenCode Desktop) :
+2. Recherchez et supprimez ces fichiers (ils se trouvent dans le répertoire de données de l'application KiCode Desktop) :
 
 - `opencode.settings.dat` (serveur de bureau par défaut URL)
 - `opencode.global.dat` et `opencode.workspace.*.dat` (état de l'interface utilisateur comme les serveurs/projets récents)

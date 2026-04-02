@@ -91,7 +91,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   '';
 
   meta = {
-    description = "OpenCode Desktop App";
+    description = "KiCode Desktop App";
     homepage = "https://opencode.ai";
     license = lib.licenses.mit;
     mainProgram = "opencode-desktop";

@@ -39,7 +39,7 @@ OpenCode 将会话数据和其他应用数据存储在磁盘上：
 
 ## 桌面应用
 
-OpenCode Desktop 会在后台运行一个本地 OpenCode 服务器（即 `opencode-cli` 附属进程）。大多数问题是由插件异常、缓存损坏或错误的服务器设置引起的。
+KiCode Desktop 会在后台运行一个本地 OpenCode 服务器（即 `opencode-cli` 附属进程）。大多数问题是由插件异常、缓存损坏或错误的服务器设置引起的。
 
 ### 快速检查
 
@@ -88,20 +88,20 @@ OpenCode 还可以从磁盘加载本地插件。临时将这些插件移走（�
 
 如果禁用插件没有帮助（或插件安装卡住了），请清除缓存以便 OpenCode 重新构建。
 
-1. 完全退出 OpenCode Desktop。
+1. 完全退出 KiCode Desktop。
 2. 删除缓存目录：
 
 - **macOS**: Finder -> `Cmd+Shift+G` -> 粘贴 `~/.cache/opencode`
 - **Linux**: 删除 `~/.cache/opencode`（或运行 `rm -rf ~/.cache/opencode`）
 - **Windows**: 按 `WIN+R` 并粘贴 `%USERPROFILE%\.cache\opencode`
 
-3. 重新启动 OpenCode Desktop。
+3. 重新启动 KiCode Desktop。
 
 ---
 
 ### 修复服务器连接问题
 
-OpenCode Desktop 可以启动自己的本地服务器（默认行为），也可以连接到你配置的服务器 URL。
+KiCode Desktop 可以启动自己的本地服务器（默认行为），也可以连接到你配置的服务器 URL。
 
 如果你看到**"Connection Failed"**对话框（或应用始终停留在启动画面），请检查自定义服务器 URL。
 
@@ -132,7 +132,7 @@ OpenCode Desktop 可以启动自己的本地服务器（默认行为），也可
 
 ### Windows: WebView2 运行时
 
-在 Windows 上，OpenCode Desktop 需要 Microsoft Edge **WebView2 Runtime**。如果应用打开后是空白窗口或无法启动，请安装或更新 WebView2 后重试。
+在 Windows 上，KiCode Desktop 需要 Microsoft Edge **WebView2 Runtime**。如果应用打开后是空白窗口或无法启动，请安装或更新 WebView2 后重试。
 
 ---
 
@@ -144,7 +144,7 @@ OpenCode Desktop 可以启动自己的本地服务器（默认行为），也可
 
 ### 通知不显示
 
-OpenCode Desktop 仅在以下情况下显示系统通知：
+KiCode Desktop 仅在以下情况下显示系统通知：
 
 - 在操作系统设置中已为 OpenCode 启用通知，且
 - 应用窗口未处于焦点状态。
@@ -155,8 +155,8 @@ OpenCode Desktop 仅在以下情况下显示系统通知：
 
 如果应用无法启动且你无法从 UI 内部清除设置，请重置桌面应用的保存状态。
 
-1. 退出 OpenCode Desktop。
-2. 找到并删除以下文件（它们位于 OpenCode Desktop 应用数据目录中）：
+1. 退出 KiCode Desktop。
+2. 找到并删除以下文件（它们位于 KiCode Desktop 应用数据目录中）：
 
 - `opencode.settings.dat`（桌面默认服务器 URL）
 - `opencode.global.dat` 和 `opencode.workspace.*.dat`（UI 状态，如最近的服务器/项目）

@@ -1,6 +1,6 @@
-# OpenCode Desktop
+# KiCode Desktop
 
-Native OpenCode desktop app, built with Tauri v2.
+Native KiCode Desktop app, built with Tauri v2.
 
 ## Development
 

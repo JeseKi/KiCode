@@ -611,7 +611,7 @@ export const dict = {
   "sidebar.project.viewAllSessions": "Prikaži sve sesije",
   "sidebar.project.clearNotifications": "Očisti obavijesti",
 
-  "app.name.desktop": "OpenCode Desktop",
+  "app.name.desktop": "KiCode Desktop",
 
   "settings.section.desktop": "Desktop",
   "settings.section.server": "Server",

@@ -39,7 +39,7 @@ Ten katalog zawiera:
 
 ## Aplikacja desktopowa
 
-opencode Desktop uruchamia w tle lokalny serwer opencode (sidecar `opencode-cli`). Większość problemów jest spowodowana nieprawidłowo działającą wtyczką, uszkodzoną pamięcią podręczną lub złymi ustawieniami serwera.
+KiCode Desktop uruchamia w tle lokalny serwer opencode (sidecar `opencode-cli`). Większość problemów jest spowodowana nieprawidłowo działającą wtyczką, uszkodzoną pamięcią podręczną lub złymi ustawieniami serwera.
 
 ### Szybkie sprawdzenie
 
@@ -88,20 +88,20 @@ Jeśli aplikacja ponownie zacznie działać, włączaj ponownie wtyczki pojedync
 
 Jeśli wyłączenie wtyczek nie pomoże (lub instalacja wtyczki utknęła), wyczyść pamięć podręczną, aby opencode mógł ją odbudować.
 
-1. Całkowicie zamknij opencode Desktop.
+1. Całkowicie zamknij KiCode Desktop.
 2. Usuń katalog pamięci podręcznej:
 
 - **macOS**: Finder -> `Cmd+Shift+G` -> paste `~/.cache/opencode`
 - **Linux**: usuń `~/.cache/opencode` (lub uruchom `rm -rf ~/.cache/opencode`)
 - **Windows**: Naciśnij `WIN+R` i wklej `%USERPROFILE%\.cache\opencode`
 
-3. Uruchom ponownie opencode Desktop.
+3. Uruchom ponownie KiCode Desktop.
 
 ---
 
 ### Napraw problemy z połączeniem z serwerem
 
-opencode Desktop może uruchomić własny serwer lokalny (domyślnie) lub połączyć się ze skonfigurowanym adresem URL serwera.
+KiCode Desktop może uruchomić własny serwer lokalny (domyślnie) lub połączyć się ze skonfigurowanym adresem URL serwera.
 
 Jeśli zobaczysz okno dialogowe **„Połączenie nie powiodło się”** (lub aplikacja nigdy nie wychodzi poza ekran powitalny), sprawdź, czy jest niestandardowy adres URL serwera.
 
@@ -132,7 +132,7 @@ W systemie Linux, niektóre konfiguracje Wayland mogą powodować puste okna lub
 
 ### Windows: Środowisko uruchomieniowe WebView2
 
-W systemie Windows opencode Desktop wymaga Microsoft Edge **WebView2 Runtime**. Jeśli aplikacja otwiera się w pustym oknie lub nie uruchamia się, zainstaluj/zaktualizuj WebView2 i spróbuj ponownie.
+W systemie Windows KiCode Desktop wymaga Microsoft Edge **WebView2 Runtime**. Jeśli aplikacja otwiera się w pustym oknie lub nie uruchamia się, zainstaluj/zaktualizuj WebView2 i spróbuj ponownie.
 
 ---
 
@@ -144,7 +144,7 @@ Jeśli doświadczasz niskiej wydajności, problemów z dostępem do plików lub 
 
 ### Brak powiadomień
 
-opencode Desktop pokazuje powiadomienia systemowe tylko wtedy, gdy:
+KiCode Desktop pokazuje powiadomienia systemowe tylko wtedy, gdy:
 
 - powiadomienia są włączone dla opencode w ustawieniach systemu operacyjnego, oraz
 - okno aplikacji nie jest aktywne.
@@ -155,8 +155,8 @@ opencode Desktop pokazuje powiadomienia systemowe tylko wtedy, gdy:
 
 Jeśli aplikacja nie uruchamia się i nie możesz wyczyścić ustawień w interfejsie użytkownika, zresetuj zapisany stan aplikacji komputerowej.
 
-1. Zamknij całkowicie opencode Desktop.
-2. Znajdź i usuń te pliki (znajdują się w katalogu danych aplikacji opencode Desktop):
+1. Zamknij całkowicie KiCode Desktop.
+2. Znajdź i usuń te pliki (znajdują się w katalogu danych aplikacji KiCode Desktop):
 
 - `opencode.settings.dat` (domyślny adres URL serwera na komputerze stacjonarnym)
 - `opencode.global.dat` i `opencode.workspace.*.dat` (stan interfejsu użytkownika, taki jak najnowsze serwery/projekty)

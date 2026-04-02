@@ -660,7 +660,7 @@ export const dict = {
   "download.hero.subtitle": "Disponibile in Beta per macOS, Windows e Linux",
   "download.hero.button": "Scarica per {{os}}",
   "download.section.terminal": "OpenCode Terminal",
-  "download.section.desktop": "OpenCode Desktop (Beta)",
+  "download.section.desktop": "KiCode Desktop (Beta)",
   "download.section.extensions": "OpenCode Extensions",
   "download.section.integrations": "OpenCode Integrations",
   "download.action.download": "Scarica",

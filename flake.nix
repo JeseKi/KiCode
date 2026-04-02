@@ -65,7 +65,7 @@
         in
         {
           default = opencode;
-          inherit opencode desktop;
+          inherit KiCode Desktop;
           # Updater derivation with fakeHash - build fails and reveals correct hash
           node_modules_updater = node_modules.override {
             hash = pkgs.lib.fakeHash;

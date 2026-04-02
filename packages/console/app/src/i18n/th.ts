@@ -656,7 +656,7 @@ export const dict = {
   "download.hero.subtitle": "พร้อมใช้งานในเวอร์ชันเบต้าสำหรับ macOS, Windows และ Linux",
   "download.hero.button": "ดาวน์โหลดสำหรับ {{os}}",
   "download.section.terminal": "OpenCode Terminal",
-  "download.section.desktop": "OpenCode Desktop (Beta)",
+  "download.section.desktop": "KiCode Desktop (Beta)",
   "download.section.extensions": "ส่วนขยาย OpenCode",
   "download.section.integrations": "การเชื่อมต่อ OpenCode",
   "download.action.download": "ดาวน์โหลด",

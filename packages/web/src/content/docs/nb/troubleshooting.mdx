@@ -39,7 +39,7 @@ Denne katalogen inneholder:
 
 ## Skrivebordsapp
 
-OpenCode Desktop kjører en lokal OpenCode-server (`opencode-cli` sidevognen) i bakgrunnen. De fleste problemene er forårsaket av en plugin som fungerer dårlig, en ødelagt cache eller en dårlig serverinnstilling.
+KiCode Desktop kjører en lokal OpenCode-server (`opencode-cli` sidevognen) i bakgrunnen. De fleste problemene er forårsaket av en plugin som fungerer dårlig, en ødelagt cache eller en dårlig serverinnstilling.
 
 ### Raske sjekker
 
@@ -88,20 +88,20 @@ Hvis appen begynner å fungere igjen, aktiverer du plugins én om gangen for å 
 
 Hvis deaktivering av plugins ikke hjelper (eller en plugin-installasjon sitter fast), tøm hurtigbufferen slik at OpenCode kan gjenoppbygge den.
 
-1. Avslutt OpenCode Desktop helt.
+1. Avslutt KiCode Desktop helt.
 2. Slett hurtigbufferkatalogen:
 
 - **macOS**: Finder -> `Cmd+Shift+G` -> lim inn `~/.cache/opencode`
 - **Linux**: slett `~/.cache/opencode` (eller kjør `rm -rf ~/.cache/opencode`)
 - **Windows**: Trykk `WIN+R` og lim inn `%USERPROFILE%\.cache\opencode`
 
-3. Start OpenCode Desktop på nytt.
+3. Start KiCode Desktop på nytt.
 
 ---
 
 ### Løs problemer med servertilkobling
 
-OpenCode Desktop kan enten starte sin egen lokale server (standard) eller koble til en server URL du har konfigurert.
+KiCode Desktop kan enten starte sin egen lokale server (standard) eller koble til en server URL du har konfigurert.
 
 Hvis du ser en **"Tilkobling mislyktes"**-dialogboks (eller appen kommer aldri forbi splash-skjermen), se etter en tilpasset server URL.
 
@@ -132,7 +132,7 @@ På Linux kan noen Wayland-oppsett forårsake tomme vinduer eller kompositorfeil
 
 ### Windows: WebView2 kjøretid
 
-På Windows krever OpenCode Desktop Microsoft Edge **WebView2 Runtime**. Hvis appen åpnes i et tomt vindu eller ikke starter, installer/oppdater WebView2 og prøv igjen.
+På Windows krever KiCode Desktop Microsoft Edge **WebView2 Runtime**. Hvis appen åpnes i et tomt vindu eller ikke starter, installer/oppdater WebView2 og prøv igjen.
 
 ---
 
@@ -144,7 +144,7 @@ Hvis du opplever treg ytelse, problemer med filtilgang eller terminalproblemer p
 
 ### Varsler vises ikke
 
-OpenCode Desktop viser bare systemvarsler når:
+KiCode Desktop viser bare systemvarsler når:
 
 - varsler er aktivert for OpenCode i OS-innstillingene dine, og
 - appvinduet er ikke fokusert.
@@ -155,8 +155,8 @@ OpenCode Desktop viser bare systemvarsler når:
 
 Hvis appen ikke starter og du ikke kan slette innstillingene fra UI-et, tilbakestill skrivebordsappens lagrede tilstand.
 
-1. Avslutt OpenCode Desktop.
-2. Finn og slett disse filene (de finnes i OpenCode Desktop-appens datakatalog):
+1. Avslutt KiCode Desktop.
+2. Finn og slett disse filene (de finnes i KiCode Desktop-appens datakatalog):
 
 - `opencode.settings.dat` (stasjonær standardserver URL)
 - `opencode.global.dat` og `opencode.workspace.*.dat` (UI tilstand som nylige servere/prosjekter)
