@@ -21,6 +21,28 @@ bun run --cwd packages/desktop tauri dev
 bun run --cwd packages/desktop tauri build
 ```
 
+## Windows Installer
+
+On Windows, you can build a desktop installer with one command:
+
+```bash
+bun run --cwd packages/desktop package:win
+```
+
+This defaults to an `msi` installer for the current Windows architecture and `dev` channel config.
+
+Useful variants:
+
+```bash
+bun run --cwd packages/desktop package:win --channel prod
+bun run --cwd packages/desktop package:win --kind nsis
+bun run --cwd packages/desktop package:win --arch arm64
+```
+
+The script builds the CLI sidecar first, copies it into `src-tauri/sidecars`, then runs `tauri build`.
+
+MSI packaging must run on Windows. Per Tauri's Windows installer docs, MSI builds also require the Windows `VBSCRIPT` optional feature to be enabled if you hit `light.exe` errors.
+
 ## Troubleshooting
 
 ### Rust compiler not found

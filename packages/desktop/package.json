@@ -10,7 +10,10 @@
     "dev": "vite",
     "build": "bun run typecheck && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "package:win": "bun ./scripts/package-win.ts",
+    "package:win:prod": "bun ./scripts/package-win.ts --channel prod",
+    "package:win:nsis": "bun ./scripts/package-win.ts --kind nsis"
   },
   "dependencies": {
     "@opencode-ai/app": "workspace:*",
