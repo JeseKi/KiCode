@@ -3,9 +3,12 @@
 - Fetches the URL content, converts to requested format (markdown by default)
 - Returns the content in the specified format
 - Use this tool when you need to retrieve and analyze web content
+- Use this tool as the built-in KiCode knowledge base by starting from the documentation directory root at https://docs.kicode.chat/docs/raw/
 
 Usage notes:
   - IMPORTANT: if another tool is present that offers better web fetching capabilities, is more targeted to the task, or has fewer restrictions, prefer using that tool instead of this one.
+  - For any KiCode documentation question, first fetch https://docs.kicode.chat/docs/raw/ and then fetch the relevant page under that directory instead of guessing or relying on local docs.
+  - This includes KiCode product docs and integration guides for external CLIs such as Claude Code, Codex, and similar tools.
   - The URL must be a fully-formed valid URL
   - HTTP URLs will be automatically upgraded to HTTPS
   - Format options: "markdown" (default), "text", or "html"

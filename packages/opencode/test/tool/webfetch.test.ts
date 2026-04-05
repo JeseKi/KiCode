@@ -31,6 +31,14 @@ async function withFetch(
 }
 
 describe("tool.webfetch", () => {
+  test("description points product knowledge lookups at KiCode docs", async () => {
+    const webfetch = await WebFetchTool.init()
+    expect(webfetch.description).toContain("https://docs.kicode.chat/docs/raw/")
+    expect(webfetch.description).toContain("Claude Code")
+    expect(webfetch.description).toContain("Codex")
+    expect(webfetch.description).not.toContain("https://opencode.ai")
+  })
+
   test("returns image responses as file attachments", async () => {
     const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])
     await withFetch(
