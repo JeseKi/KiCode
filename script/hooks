@@ -8,11 +8,31 @@ mkdir -p .git/hooks
 
 cat > .git/hooks/pre-push << 'EOF'
 #!/bin/sh
-# Ensure dependencies are installed before typecheck
-if command -v bun >/dev/null 2>&1; then
-  bun install >/dev/null 2>&1 || true
-fi
-bun run typecheck
+set -e
+
+find_bun() {
+  if command -v bun >/dev/null 2>&1; then
+    command -v bun
+    return 0
+  fi
+  if [ -n "${BUN_INSTALL:-}" ] && [ -x "$BUN_INSTALL/bin/bun" ]; then
+    printf '%s\n' "$BUN_INSTALL/bin/bun"
+    return 0
+  fi
+  if [ -x "$HOME/.bun/bin/bun" ]; then
+    printf '%s\n' "$HOME/.bun/bin/bun"
+    return 0
+  fi
+  return 1
+}
+
+bin="$(find_bun)" || {
+  echo "bun not found. Install bun or set BUN_INSTALL so git hooks can find it." >&2
+  exit 127
+}
+
+export PATH="$(dirname "$bin"):$PATH"
+"$bin" typecheck
 EOF
 
 chmod +x .git/hooks/pre-push

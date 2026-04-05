@@ -1,8 +1,31 @@
 #!/bin/sh
 set -e
+
+find_bun() {
+  if command -v bun >/dev/null 2>&1; then
+    command -v bun
+    return 0
+  fi
+  if [ -n "${BUN_INSTALL:-}" ] && [ -x "$BUN_INSTALL/bin/bun" ]; then
+    printf '%s\n' "$BUN_INSTALL/bin/bun"
+    return 0
+  fi
+  if [ -x "$HOME/.bun/bin/bun" ]; then
+    printf '%s\n' "$HOME/.bun/bin/bun"
+    return 0
+  fi
+  return 1
+}
+
+bin="$(find_bun)" || {
+  echo "bun not found. Install bun or set BUN_INSTALL so git hooks can find it." >&2
+  exit 127
+}
+
+export PATH="$(dirname "$bin"):$PATH"
 # Check if bun version matches package.json
 # keep in sync with packages/script/src/index.ts semver qualifier
-bun -e '
+"$bin" -e '
 import { semver } from "bun";
 const pkg = await Bun.file("package.json").json();
 const expectedBunVersion = pkg.packageManager?.split("@")[1];
@@ -17,4 +40,4 @@ if (process.versions.bun !== expectedBunVersion) {
   console.warn(`Warning: Bun version ${process.versions.bun} differs from expected ${expectedBunVersion}`);
 }
 '
-bun typecheck
+"$bin" typecheck
