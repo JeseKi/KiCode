@@ -26,7 +26,7 @@ type Code = {
   email: string
 }
 
-const poll = 30_000
+const poll = 60_000
 
 const isObj = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object"
 

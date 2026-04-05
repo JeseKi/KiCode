@@ -62,6 +62,32 @@ test("provider loaded from config with apiKey option", async () => {
   })
 })
 
+test("dated anthropic model names include version date", async () => {
+  await using tmp = await tmpdir({
+    init: async (dir) => {
+      await Bun.write(
+        path.join(dir, "opencode.json"),
+        JSON.stringify({
+          $schema: "https://opencode.ai/config.json",
+        }),
+      )
+    },
+  })
+  await Instance.provide({
+    directory: tmp.path,
+    init: async () => {
+      Env.set("ANTHROPIC_API_KEY", "test-api-key")
+    },
+    fn: async () => {
+      const providers = await Provider.list()
+      const latest = providers[ProviderID.anthropic].models["claude-opus-4-5"]
+      const dated = providers[ProviderID.anthropic].models["claude-opus-4-5-20251101"]
+      expect(latest.name).toBe("Claude Opus 4.5 (latest)")
+      expect(dated.name).toBe("Claude Opus 4.5 (2025-11-01)")
+    },
+  })
+})
+
 test("kicode token syncs openai and anthropic models", async () => {
   const originalFetch = globalThis.fetch
   globalThis.fetch = mock((url: string | URL | Request, init?: RequestInit) => {
@@ -114,7 +140,7 @@ test("kicode token syncs openai and anthropic models", async () => {
         expect(providers[ProviderID.openai]).toBeDefined()
         expect(providers[ProviderID.anthropic]).toBeDefined()
         expect(providers[ProviderID.openai].options.baseURL).toBe("https://kicode.chat/api/codex/v1")
-        expect(providers[ProviderID.anthropic].options.baseURL).toBe("https://kicode.chat/api/claude")
+        expect(providers[ProviderID.anthropic].options.baseURL).toBe("https://kicode.chat/api/claude/v1")
         expect(Object.keys(providers[ProviderID.openai].models)).toEqual(["gpt-5.2"])
         expect(Object.keys(providers[ProviderID.anthropic].models)).toEqual(["claude-sonnet-4-20250514"])
       },

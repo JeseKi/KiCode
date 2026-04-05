@@ -3,11 +3,15 @@ import { Auth } from "@/auth"
 const root = process.env.OPENCODE_KICODE_URL || "https://kicode.chat"
 const loginURL = process.env.OPENCODE_KICODE_AUTH_URL || `${root}/api/llm_login`
 const refreshURL = process.env.OPENCODE_KICODE_REFRESH_URL || `${root}/api/auth/refresh`
+const profileURL = process.env.OPENCODE_KICODE_PROFILE_URL || `${root}/api/auth/profile`
 const registerURL = process.env.OPENCODE_KICODE_REGISTER_URL || `${root}/api/auth/register`
 const codeURL = process.env.OPENCODE_KICODE_CODE_URL || `${root}/api/auth/send-verification-code`
 const key = "kicode"
 const skew = 60_000
+const beat = 60_000
 const fallback = 25 * 60_000
+let seen = ""
+let ping = 0
 
 type Token = {
   access_token?: string
@@ -65,10 +69,14 @@ const expiry = (token: string) => {
 }
 
 const clear = async () => {
+  seen = ""
+  ping = 0
   await Auth.remove(key).catch(() => undefined)
 }
 
 const save = async (username: string, token: { access: string; refresh: string }) => {
+  seen = ""
+  ping = 0
   const row = new Auth.Session({
     type: "session",
     username,
@@ -83,6 +91,21 @@ const save = async (username: string, token: { access: string; refresh: string }
 const read = async () => {
   const row = await Auth.get(key)
   if (row?.type !== "session") return
+  return row
+}
+
+const live = async (row: Auth.Session) => {
+  if (row.expires <= Date.now() + skew) return KiCodeAuth.refresh()
+  if (seen === row.access && ping > Date.now() - beat) return row
+  const res = await fetch(profileURL, {
+    headers: {
+      Authorization: `Bearer ${row.access}`,
+    },
+    signal: AbortSignal.timeout(10_000),
+  }).catch(() => undefined)
+  seen = row.access
+  ping = Date.now()
+  if (res?.status === 401) return KiCodeAuth.refresh()
   return row
 }
 
@@ -109,8 +132,7 @@ export namespace KiCodeAuth {
   export const session = async () => {
     const row = await read()
     if (!row) return
-    if (row.expires > Date.now() + skew) return row
-    return refresh().catch(async () => {
+    return live(row).catch(async () => {
       await clear()
       return
     })

@@ -61,7 +61,7 @@ export namespace Provider {
   const log = Log.create({ service: "provider" })
   const root = process.env.OPENCODE_KICODE_URL || "https://kicode.chat"
   const openaiURL = process.env.OPENCODE_KICODE_OPENAI_URL || `${root}/api/codex/v1`
-  const anthropicURL = process.env.OPENCODE_KICODE_ANTHROPIC_URL || `${root}/api/claude`
+  const anthropicURL = process.env.OPENCODE_KICODE_ANTHROPIC_URL || `${root}/api/claude/v1`
 
   function shouldUseCopilotResponsesApi(modelID: string): boolean {
     const match = /^gpt-(\d+)/.exec(modelID)
@@ -89,11 +89,22 @@ export namespace Provider {
     return ""
   }
 
+  function stamp(name: string, id: string) {
+    const text = name.trim()
+    if (!text || text.toLowerCase().includes("(latest)")) return text || name
+    const hit = [...id.matchAll(/(\d{4})(\d{2})(\d{2})/g)].at(-1)
+    if (!hit) return text || name
+    const raw = `${hit[1]}${hit[2]}${hit[3]}`
+    const date = `${hit[1]}-${hit[2]}-${hit[3]}`
+    if (text.includes(raw) || text.includes(date)) return text
+    return `${text} (${date})`
+  }
+
   function generic(input: Info, modelID: string, name: string, kind: "openai" | "anthropic"): Model {
     const model: Model = {
       id: ModelID.make(modelID),
       providerID: ProviderID.make(input.id),
-      name,
+      name: stamp(name, modelID),
       family: family(modelID),
       api: {
         id: modelID,
@@ -147,7 +158,7 @@ export namespace Provider {
   async function sync(input: Info, kind: "openai" | "anthropic", token?: string) {
     if (!token) return
 
-    const res = await fetch(`${kind === "openai" ? openaiURL : `${anthropicURL}/v1`}/models`, {
+    const res = await fetch(`${kind === "openai" ? openaiURL : anthropicURL}/models`, {
       headers: {
         authorization: `Bearer ${token}`,
       },
@@ -1011,7 +1022,7 @@ export namespace Provider {
     const m: Model = {
       id: ModelID.make(model.id),
       providerID: ProviderID.make(provider.id),
-      name: model.name,
+      name: stamp(model.name, model.id),
       family: model.family,
       api: {
         id: model.id,
