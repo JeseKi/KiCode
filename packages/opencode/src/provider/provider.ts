@@ -69,17 +69,10 @@ export namespace Provider {
     return Number(match[1]) >= 5 && !modelID.startsWith("gpt-5-mini")
   }
 
-  async function key(id: "openai" | "anthropic", env: string[]) {
+  async function key(id: "openai" | "anthropic") {
     const session = await KiCodeAuth.session()
-    if (session?.access) return session.access
-
-    const auth = await Auth.get(id)
-    if (auth?.type === "api") return auth.key
-
-    const alt = await Auth.get(id === "openai" ? "anthropic" : "openai")
-    if (alt?.type === "api") return alt.key
-
-    return env.map((item) => Env.get(item)).find(Boolean)
+    if (!session?.access) throw new Error("请重新登陆 KiCode 以使用模型。")
+    return session.access
   }
 
   function family(id: string) {
@@ -178,11 +171,7 @@ export namespace Provider {
           const id = typeof row?.id === "string" ? row.id : undefined
           if (!id) return
           const name =
-            typeof row?.display_name === "string"
-              ? row.display_name
-              : typeof row?.name === "string"
-                ? row.name
-                : id
+            typeof row?.display_name === "string" ? row.display_name : typeof row?.name === "string" ? row.name : id
           return [id, input.models[id] ?? generic(input, id, name, kind)] as const
         })
         .filter((item: readonly [string, Model] | undefined): item is readonly [string, Model] => Boolean(item)),
@@ -284,7 +273,10 @@ export namespace Provider {
 
   const CUSTOM_LOADERS: Record<string, CustomLoader> = {
     async anthropic(input) {
-      const token = (await key("anthropic", ["ANTHROPIC_API_KEY"])) ?? input.options?.apiKey
+      const token = await key("anthropic").catch(() => {
+        KiCodeAuth.logout()
+        throw new Error("KiCode Session 过期，请重新登录。")
+      })
       await sync(input, "anthropic", typeof token === "string" ? token : undefined)
       return {
         autoload: typeof token === "string" && token.length > 0,
@@ -320,7 +312,10 @@ export namespace Provider {
       }
     },
     openai: async (input) => {
-      const token = (await key("openai", ["OPENAI_API_KEY"])) ?? input.options?.apiKey
+      const token = await key("openai").catch(() => {
+        KiCodeAuth.logout()
+        throw new Error("KiCode Session 过期，请重新登录。")
+      })
       await sync(input, "openai", typeof token === "string" ? token : undefined)
       return {
         autoload: typeof token === "string" && token.length > 0,
@@ -1107,7 +1102,10 @@ export namespace Provider {
           using _ = log.time("state")
           const cfg = yield* config.get()
           const modelsDev = yield* Effect.promise(() => ModelsDev.get())
-          const database = mapValues(pickBy(modelsDev, (_, id) => allow(id)), fromModelsDevProvider)
+          const database = mapValues(
+            pickBy(modelsDev, (_, id) => allow(id)),
+            fromModelsDevProvider,
+          )
 
           const disabled = new Set(cfg.disabled_providers ?? [])
           const enabled = cfg.enabled_providers ? new Set(cfg.enabled_providers) : null
