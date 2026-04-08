@@ -35,16 +35,30 @@ export const SIDECAR_BINARIES: Array<{ rustTarget: string; ocBinary: string; ass
 
 export const RUST_TARGET = Bun.env.RUST_TARGET
 
-export function getCurrentSidecar(target = RUST_TARGET) {
-  if (!target && !RUST_TARGET) throw new Error("RUST_TARGET not set")
-
-  const binaryConfig = SIDECAR_BINARIES.find((b) => b.rustTarget === target)
-  if (!binaryConfig) throw new Error(`Sidecar configuration not available for Rust target '${RUST_TARGET}'`)
-
-  return binaryConfig
+export function nativeTarget() {
+  const { platform, arch } = process
+  if (platform === "darwin") return arch === "arm64" ? "aarch64-apple-darwin" : "x86_64-apple-darwin"
+  if (platform === "win32") return arch === "arm64" ? "aarch64-pc-windows-msvc" : "x86_64-pc-windows-msvc"
+  if (platform === "linux") return arch === "arm64" ? "aarch64-unknown-linux-gnu" : "x86_64-unknown-linux-gnu"
+  throw new Error(`Unsupported platform: ${platform}/${arch}`)
 }
 
-export async function copyBinaryToSidecarFolder(source: string, target = RUST_TARGET) {
+export function resolveTarget(target = RUST_TARGET ?? Bun.env.TAURI_ENV_TARGET_TRIPLE ?? nativeTarget()) {
+  return target
+}
+
+export function getCurrentSidecar(target = resolveTarget()) {
+  const resolved =
+    target === nativeTarget() && target === "x86_64-pc-windows-msvc"
+      ? { rustTarget: target, ocBinary: "opencode-windows-x64", assetExt: "zip" }
+      : SIDECAR_BINARIES.find((b) => b.rustTarget === target)
+
+  if (!resolved) throw new Error(`Sidecar configuration not available for Rust target '${target}'`)
+
+  return resolved
+}
+
+export async function copyBinaryToSidecarFolder(source: string, target = resolveTarget()) {
   await $`mkdir -p src-tauri/sidecars`
   const dest = windowsify(`src-tauri/sidecars/opencode-cli-${target}`)
   await $`cp ${source} ${dest}`
