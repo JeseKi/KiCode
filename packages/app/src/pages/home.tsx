@@ -1,4 +1,4 @@
-import { createMemo, For, Match, Switch } from "solid-js"
+import { createMemo, For, Match, Switch, createEffect, onMount } from "solid-js"
 import { Button } from "@opencode-ai/ui/button"
 import { Logo } from "@opencode-ai/ui/logo"
 import { useLayout } from "@/context/layout"
@@ -42,6 +42,18 @@ export default function Home() {
     server.projects.touch(directory)
     navigate(`/${base64Encode(directory)}`)
   }
+
+  onMount(() => {
+    if (sync.ready && sync.data.project.length === 0 && homedir()) {
+      openProject(homedir())
+    }
+  })
+
+  createEffect(() => {
+    if (sync.ready && sync.data.project.length === 0 && homedir()) {
+      openProject(homedir())
+    }
+  })
 
   async function chooseProject() {
     function resolve(result: string | string[] | null) {
