@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto"
 import { EventEmitter } from "node:events"
 import { existsSync } from "node:fs"
+import { mkdtemp, writeFile } from "node:fs/promises"
 import { createServer } from "node:net"
-import { homedir } from "node:os"
+import { homedir, tmpdir } from "node:os"
 import { join } from "node:path"
 import type { Event } from "electron"
-import { app, BrowserWindow, dialog } from "electron"
-import pkg from "electron-updater"
+import { app, BrowserWindow, dialog, shell } from "electron"
 
 const APP_NAMES: Record<string, string> = {
   dev: "OpenCode Dev",
@@ -20,7 +20,6 @@ const APP_IDS: Record<string, string> = {
 }
 app.setName(app.isPackaged ? APP_NAMES[CHANNEL] : "OpenCode Dev")
 app.setPath("userData", join(app.getPath("appData"), app.isPackaged ? APP_IDS[CHANNEL] : "ai.opencode.desktop.dev"))
-const { autoUpdater } = pkg
 
 import type { InitStep, ServerReadyData, SqliteMigrationProgress, WslConfig } from "../preload/types"
 import { checkAppExists, resolveAppPath, wslPath } from "./apps"
@@ -42,9 +41,21 @@ let sidecar: CommandChild | null = null
 const loadingComplete = defer<void>()
 
 const pendingDeepLinks: string[] = []
+const UPDATE_URL = "https://releases.kispace.cc/api/public/latest"
 
 const serverReady = defer<ServerReadyData>()
 const logger = initLogging()
+
+type Release = {
+  version: string
+  tags: string[]
+  download_url: string | null
+  release_notes: string | null
+  created_at: string
+}
+
+let ready: Release | null = null
+let file: { version: string; path: string } | null = null
 
 logger.log("app starting", {
   version: app.getVersion(),
@@ -96,7 +107,7 @@ function setupApp() {
     // migrate()
     app.setAsDefaultProtocolClient("opencode")
     setDockIcon()
-    setupAutoUpdater()
+    setupUpdater()
     syncCli()
     await initialize()
   })
@@ -305,64 +316,116 @@ function sqliteFileExists() {
   return existsSync(join(base, "opencode", "opencode.db"))
 }
 
-function setupAutoUpdater() {
+function setupUpdater() {
   if (!UPDATER_ENABLED) return
-  autoUpdater.logger = logger
-  autoUpdater.channel = "latest"
-  autoUpdater.allowPrerelease = false
-  autoUpdater.allowDowngrade = true
-  autoUpdater.autoDownload = false
-  autoUpdater.autoInstallOnAppQuit = true
-  logger.log("auto updater configured", {
-    channel: autoUpdater.channel,
-    allowPrerelease: autoUpdater.allowPrerelease,
-    allowDowngrade: autoUpdater.allowDowngrade,
+  logger.log("updater configured", {
     currentVersion: app.getVersion(),
+    platform: process.platform,
+    channel: CHANNEL,
   })
 }
 
-let updateReady = false
+function platformTag() {
+  if (process.platform === "win32") return "windows"
+  if (process.platform === "darwin") return "macos"
+  if (process.platform === "linux") return "linux"
+  return null
+}
+
+async function latest() {
+  const tag = platformTag()
+  if (!tag) return null
+  if (tag !== "windows" || CHANNEL !== "prod") {
+    return {
+      version: app.getVersion(),
+      tags: [tag, CHANNEL === "prod" ? "stable" : CHANNEL],
+      download_url: null,
+      release_notes: null,
+      created_at: new Date().toISOString(),
+    } satisfies Release
+  }
+
+  const url = new URL(UPDATE_URL)
+  url.searchParams.set("app", "kicode_desktop")
+  url.searchParams.append("tags", tag)
+  url.searchParams.append("tags", "stable")
+
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Update API returned ${res.status}`)
+
+  const body = (await res.json()) as Partial<Release>
+  if (typeof body.version !== "string") throw new Error("Update API missing version")
+  if (typeof body.download_url !== "string") throw new Error("Update API missing download_url")
+
+  return {
+    version: body.version,
+    tags: Array.isArray(body.tags) ? body.tags.filter((x): x is string => typeof x === "string") : [],
+    download_url: body.download_url,
+    release_notes: typeof body.release_notes === "string" ? body.release_notes : null,
+    created_at: typeof body.created_at === "string" ? body.created_at : "",
+  } satisfies Release
+}
+
+async function installer(rel: Release) {
+  if (file?.version === rel.version && existsSync(file.path)) return file.path
+  if (!rel.download_url) throw new Error("Update download is unavailable")
+
+  const res = await fetch(rel.download_url)
+  if (!res.ok) throw new Error(`Installer download failed with ${res.status}`)
+
+  const dir = await mkdtemp(join(tmpdir(), "kicode-update-"))
+  const name = new URL(rel.download_url).pathname.split("/").filter(Boolean).at(-1) ?? `KiCode_${rel.version}.msi`
+  const path = join(dir, name)
+  const buf = Buffer.from(await res.arrayBuffer())
+  await writeFile(path, buf)
+  file = { version: rel.version, path }
+  return path
+}
 
 async function checkUpdate() {
   if (!UPDATER_ENABLED) return { updateAvailable: false }
-  updateReady = false
   logger.log("checking for updates", {
     currentVersion: app.getVersion(),
-    channel: autoUpdater.channel,
-    allowPrerelease: autoUpdater.allowPrerelease,
-    allowDowngrade: autoUpdater.allowDowngrade,
+    platform: process.platform,
+    channel: CHANNEL,
   })
   try {
-    const result = await autoUpdater.checkForUpdates()
-    const updateInfo = result?.updateInfo
+    ready = null
+    const rel = await latest()
     logger.log("update metadata fetched", {
-      releaseVersion: updateInfo?.version ?? null,
-      releaseDate: updateInfo?.releaseDate ?? null,
-      releaseName: updateInfo?.releaseName ?? null,
-      files: updateInfo?.files?.map((file) => file.url) ?? [],
+      releaseVersion: rel?.version ?? null,
+      releaseDate: rel?.created_at ?? null,
+      files: rel?.download_url ? [rel.download_url] : [],
     })
-    const version = result?.updateInfo?.version
-    if (result?.isUpdateAvailable === false || !version) {
+    if (!rel || rel.version === app.getVersion()) {
       logger.log("no update available", {
         reason: "provider returned no newer version",
       })
       return { updateAvailable: false }
     }
-    logger.log("update available", { version })
-    await autoUpdater.downloadUpdate()
-    logger.log("update download completed", { version })
-    updateReady = true
-    return { updateAvailable: true, version }
+    ready = rel
+    logger.log("update available", { version: rel.version })
+    return { updateAvailable: true, version: rel.version }
   } catch (error) {
+    ready = null
     logger.error("update check failed", error)
     return { updateAvailable: false, failed: true }
   }
 }
 
 async function installUpdate() {
-  if (!updateReady) return
+  const rel = ready
+  if (!rel) return
+  const path = await installer(rel)
+  logger.log("launching installer", {
+    version: rel.version,
+    path,
+  })
+  const err = await shell.openPath(path)
+  if (err) throw new Error(err)
   killSidecar()
-  autoUpdater.quitAndInstall()
+  app.exit(0)
+  await new Promise<void>(() => undefined)
 }
 
 async function checkForUpdates(alertOnFail: boolean) {
@@ -393,15 +456,15 @@ async function checkForUpdates(alertOnFail: boolean) {
 
   const response = await dialog.showMessageBox({
     type: "info",
-    message: `Update ${result.version ?? ""} downloaded. Restart now?`,
-    title: "Update Ready",
-    buttons: ["Restart", "Later"],
+    message: `KiCode ${result.version ?? ""} is available. Install now?`,
+    title: "Update Available",
+    buttons: ["Install", "Later"],
     defaultId: 0,
     cancelId: 1,
   })
   logger.log("update prompt response", {
     version: result.version ?? null,
-    restartNow: response.response === 0,
+    installNow: response.response === 0,
   })
   if (response.response === 0) {
     await installUpdate()
