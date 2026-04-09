@@ -1,6 +1,7 @@
 import { Component, Show, createMemo, createResource, onMount, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Button } from "@opencode-ai/ui/button"
+import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { Icon } from "@opencode-ai/ui/icon"
 import { Select } from "@opencode-ai/ui/select"
 import { Switch } from "@opencode-ai/ui/switch"
@@ -8,6 +9,7 @@ import { TextField } from "@opencode-ai/ui/text-field"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { useTheme, type ColorScheme } from "@opencode-ai/ui/theme/context"
 import { showToast } from "@opencode-ai/ui/toast"
+import { useAuth } from "@/context/auth"
 import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
 import {
@@ -62,6 +64,8 @@ const playDemoSound = (id: string | undefined) => {
 }
 
 export const SettingsGeneral: Component = () => {
+  const auth = useAuth()
+  const dialog = useDialog()
   const theme = useTheme()
   const language = useLanguage()
   const platform = usePlatform()
@@ -73,6 +77,7 @@ export const SettingsGeneral: Component = () => {
 
   const [store, setStore] = createStore({
     checking: false,
+    logout: false,
   })
 
   const linux = createMemo(() => platform.platform === "desktop" && platform.os === "linux")
@@ -129,6 +134,18 @@ export const SettingsGeneral: Component = () => {
         showToast({ title: language.t("common.requestFailed"), description: message })
       })
       .finally(() => setStore("checking", false))
+  }
+
+  const logout = () => {
+    setStore("logout", true)
+    void auth
+      .logout()
+      .then(() => dialog.close())
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+      })
+      .finally(() => setStore("logout", false))
   }
 
   const themeOptions = createMemo<ThemeOption[]>(() => theme.ids().map((id) => ({ id, name: theme.name(id) })))
@@ -511,6 +528,23 @@ export const SettingsGeneral: Component = () => {
     </div>
   )
 
+  const AccountSection = () => (
+    <div class="flex flex-col gap-1">
+      <h3 class="text-14-medium text-text-strong pb-2">{language.t("settings.general.section.account")}</h3>
+
+      <SettingsList>
+        <SettingsRow
+          title={language.t("settings.general.row.logout.title")}
+          description={language.t("settings.general.row.logout.description")}
+        >
+          <Button size="small" variant="secondary" disabled={store.logout} onClick={logout}>
+            {store.logout ? language.t("settings.general.row.logout.working") : language.t("common.logout")}
+          </Button>
+        </SettingsRow>
+      </SettingsList>
+    </div>
+  )
+
   return (
     <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
       <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
@@ -557,6 +591,8 @@ export const SettingsGeneral: Component = () => {
         </Show>*/}
 
         <UpdatesSection />
+
+        <AccountSection />
 
         <Show when={linux()}>
           {(_) => {

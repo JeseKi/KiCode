@@ -91,6 +91,11 @@ export namespace Auth {
         const data = yield* all()
         delete data[key]
         delete data[norm]
+        if (Object.keys(data).length === 0) {
+          if (!(yield* fsys.existsSafe(file))) return
+          yield* fsys.remove(file).pipe(Effect.mapError(fail("Failed to remove auth data")))
+          return
+        }
         yield* fsys.writeJson(file, data, 0o600).pipe(Effect.mapError(fail("Failed to write auth data")))
       })
 
