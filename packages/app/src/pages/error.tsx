@@ -240,6 +240,10 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
     await platform
       .checkUpdate()
       .then((result) => {
+        if (result.failed) {
+          setStore("actionError", "Failed to check for updates.")
+          return
+        }
         setStore("actionError", undefined)
         if (result.updateAvailable && result.version) setStore("version", result.version)
       })
