@@ -15,3 +15,6 @@ Copy-Item -LiteralPath ..\opencode\dist\opencode-windows-x64\bin\opencode.exe -D
 {"build":{"beforeBuildCommand":""},"bundle":{"targets":["nsis"]}}
 '@ | Set-Content -Path tmp-tauri-nsis.json
 node .\node_modules\@tauri-apps\cli\tauri.js build --target x86_64-pc-windows-msvc --config .\src-tauri\tauri.prod.conf.json --config .\tmp-tauri-nsis.json --ci --verbose --no-sign
+# web dev
+bun run dev serve --port 4097
+VITE_OPENCODE_SERVER_PORT=4097 bun run dev:web

@@ -335,7 +335,7 @@ function platformTag() {
 async function latest() {
   const tag = platformTag()
   if (!tag) return null
-  if (tag !== "windows" || CHANNEL !== "prod") {
+  if (tag !== "windows") {
     return {
       version: app.getVersion(),
       tags: [tag, CHANNEL === "prod" ? "stable" : CHANNEL],
