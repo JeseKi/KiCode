@@ -6,6 +6,7 @@ import { commands } from "./bindings"
 import { installCli } from "./cli"
 import { initI18n, t } from "./i18n"
 import { runUpdater, UPDATER_ENABLED } from "./updater"
+import pkg from "../package.json"
 
 export async function createMenu(trigger: (id: string) => void) {
   if (ostype() !== "macos") return
@@ -22,7 +23,7 @@ export async function createMenu(trigger: (id: string) => void) {
           }),
           await MenuItem.new({
             enabled: UPDATER_ENABLED,
-            action: () => runUpdater({ alertOnFail: true }),
+            action: () => runUpdater({ alertOnFail: true, current: pkg.version, os: ostype() }),
             text: t("desktop.menu.checkForUpdates"),
           }),
           await MenuItem.new({

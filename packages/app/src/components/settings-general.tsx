@@ -108,7 +108,7 @@ export const SettingsGeneral: Component = () => {
         }
 
         const actions =
-          platform.update && platform.restart
+          result.installable && platform.update && platform.restart
             ? [
                 {
                   label: language.t("toast.update.action.installRestart"),
@@ -122,7 +122,18 @@ export const SettingsGeneral: Component = () => {
                   onClick: "dismiss" as const,
                 },
               ]
-            : [
+            : result.downloadUrl
+                  ? [
+                      {
+                        label: language.t("common.open"),
+                        onClick: () => platform.openLink(result.downloadUrl!),
+                      },
+                  {
+                    label: language.t("toast.update.action.notYet"),
+                    onClick: "dismiss" as const,
+                  },
+                ]
+              : [
                 {
                   label: language.t("toast.update.action.notYet"),
                   onClick: "dismiss" as const,

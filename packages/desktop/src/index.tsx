@@ -26,12 +26,11 @@ import { type as ostype } from "@tauri-apps/plugin-os"
 import { relaunch } from "@tauri-apps/plugin-process"
 import { open as shellOpen } from "@tauri-apps/plugin-shell"
 import { Store } from "@tauri-apps/plugin-store"
-import { check, type Update } from "@tauri-apps/plugin-updater"
 import { createResource, onCleanup, onMount, Show } from "solid-js"
 import { render } from "solid-js/web"
 import pkg from "../package.json"
 import { initI18n, t } from "./i18n"
-import { UPDATER_ENABLED } from "./updater"
+import { checkNow, UPDATER_ENABLED } from "./updater"
 import { webviewZoom } from "./webview-zoom"
 import "./styles.css"
 import { Channel } from "@tauri-apps/api/core"
@@ -56,8 +55,6 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 }
 
 void initI18n()
-
-let update: Update | null = null
 
 const deepLinkEvent = "opencode:deep-link"
 
@@ -298,22 +295,11 @@ const createPlatform = (): Platform => {
     })(),
 
     checkUpdate: async () => {
-      if (!UPDATER_ENABLED) return { updateAvailable: false }
-      const next = await check().catch(() => null)
-      if (!next) return { updateAvailable: false }
-      const ok = await next
-        .download()
-        .then(() => true)
-        .catch(() => false)
-      if (!ok) return { updateAvailable: false }
-      update = next
-      return { updateAvailable: true, version: next.version }
+      return checkNow(pkg.version, os)
     },
 
     update: async () => {
-      if (!UPDATER_ENABLED || !update) return
-      if (ostype() === "windows") await commands.killSidecar().catch(() => undefined)
-      await update.install().catch(() => undefined)
+      return
     },
 
     restart: async () => {

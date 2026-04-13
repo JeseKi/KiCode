@@ -377,7 +377,8 @@ export default function Layout(props: ParentProps) {
       let interval: ReturnType<typeof setInterval> | undefined
 
       const pollUpdate = () =>
-        platform.checkUpdate!().then(({ updateAvailable, version }) => {
+        platform.checkUpdate!().then((result) => {
+          const { updateAvailable, version } = result
           if (!updateAvailable) return
           if (toastId !== undefined) return
           toastId = showToast({
@@ -385,19 +386,38 @@ export default function Layout(props: ParentProps) {
             icon: "download",
             title: language.t("toast.update.title"),
             description: language.t("toast.update.description", { version: version ?? "" }),
-            actions: [
-              {
-                label: language.t("toast.update.action.installRestart"),
-                onClick: async () => {
-                  await platform.update!()
-                  await platform.restart!()
-                },
-              },
-              {
-                label: language.t("toast.update.action.notYet"),
-                onClick: "dismiss",
-              },
-            ],
+            actions:
+              result.installable && platform.update && platform.restart
+                ? [
+                    {
+                      label: language.t("toast.update.action.installRestart"),
+                      onClick: async () => {
+                        await platform.update!()
+                        await platform.restart!()
+                      },
+                    },
+                    {
+                      label: language.t("toast.update.action.notYet"),
+                      onClick: "dismiss",
+                    },
+                  ]
+                : result.downloadUrl
+                  ? [
+                      {
+                        label: language.t("common.open"),
+                        onClick: () => platform.openLink(result.downloadUrl!),
+                      },
+                      {
+                        label: language.t("toast.update.action.notYet"),
+                        onClick: "dismiss",
+                      },
+                    ]
+                  : [
+                      {
+                        label: language.t("toast.update.action.notYet"),
+                        onClick: "dismiss",
+                      },
+                    ],
           })
         })
 

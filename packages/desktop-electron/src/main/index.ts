@@ -332,6 +332,25 @@ function platformTag() {
   return null
 }
 
+function cleanVersion(version: string) {
+  const value = version.trim().replace(/^v/i, "")
+  const part = value.split("-")[0]?.split("+")[0]
+  if (!part) return null
+  const list = part
+    .split(".")
+    .map((item) => Number.parseInt(item, 10))
+    .filter((item) => Number.isFinite(item))
+  if (list.length === 0) return null
+  return list
+}
+
+function sameVersion(a: string, b: string) {
+  const left = cleanVersion(a)
+  const right = cleanVersion(b)
+  if (!left || !right) return a.trim() === b.trim()
+  return left.join(".") === right.join(".")
+}
+
 async function latest() {
   const tag = platformTag()
   if (!tag) return null
@@ -348,7 +367,7 @@ async function latest() {
   const url = new URL(UPDATE_URL)
   url.searchParams.set("app", "kicode_desktop")
   url.searchParams.append("tags", tag)
-  url.searchParams.append("tags", "stable")
+  url.searchParams.append("tags", CHANNEL === "prod" ? "stable" : CHANNEL)
 
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Update API returned ${res.status}`)
@@ -384,8 +403,9 @@ async function installer(rel: Release) {
 
 async function checkUpdate() {
   if (!UPDATER_ENABLED) return { updateAvailable: false }
+  const current = app.getVersion()
   logger.log("checking for updates", {
-    currentVersion: app.getVersion(),
+    currentVersion: current,
     platform: process.platform,
     channel: CHANNEL,
   })
@@ -397,9 +417,21 @@ async function checkUpdate() {
       releaseDate: rel?.created_at ?? null,
       files: rel?.download_url ? [rel.download_url] : [],
     })
-    if (!rel || rel.version === app.getVersion()) {
+    if (!rel) {
       logger.log("no update available", {
-        reason: "provider returned no newer version",
+        reason: "provider returned no release",
+      })
+      return { updateAvailable: false }
+    }
+    const same = sameVersion(rel.version, current)
+    logger.log("update version comparison", {
+      currentVersion: current,
+      releaseVersion: rel.version,
+      same,
+    })
+    if (same) {
+      logger.log("no update available", {
+        reason: "provider returned current version",
       })
       return { updateAvailable: false }
     }

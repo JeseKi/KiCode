@@ -74,7 +74,7 @@ const merge = JSON.stringify({
 console.log(`Building sidecar for ${rust}`)
 await $`bun run build ${args}`.cwd(path.resolve(root, "../opencode"))
 
-console.log(`Copying sidecar into src-tauri/sidecars`)
+console.log(`Copying sidecar into src-tauri/target/sidecars`)
 await copyBinaryToSidecarFolder(bin, rust)
 
 console.log(`Building ${values.kind} installer with ${cfg}`)

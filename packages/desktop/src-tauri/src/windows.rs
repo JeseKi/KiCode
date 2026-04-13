@@ -47,6 +47,13 @@ impl MainWindow {
             .ok()
             .map(|v| v.enabled)
             .unwrap_or(false);
+        let channel = if app.config().identifier.ends_with(".dev") {
+            "dev"
+        } else if app.config().identifier.ends_with(".beta") {
+            "beta"
+        } else {
+            "stable"
+        };
         let decorations = use_decorations();
         let window_builder = base_window_config(
             WebviewWindowBuilder::new(app, Self::LABEL, WebviewUrl::App("/".into())),
@@ -63,6 +70,7 @@ impl MainWindow {
             window.__OPENCODE__ ??= {{}};
             window.__OPENCODE__.updaterEnabled = {UPDATER_ENABLED};
             window.__OPENCODE__.wsl = {wsl_enabled};
+            window.__OPENCODE__.channel = "{channel}";
           "#
         ));
 

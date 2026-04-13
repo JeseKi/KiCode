@@ -224,6 +224,8 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
   const [store, setStore] = createStore({
     checking: false,
     version: undefined as string | undefined,
+    url: undefined as string | undefined,
+    installable: false,
     actionError: undefined as string | undefined,
   })
 
@@ -245,6 +247,8 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
           return
         }
         setStore("actionError", undefined)
+        setStore("url", result.downloadUrl)
+        setStore("installable", result.installable ?? false)
         if (result.updateAvailable && result.version) setStore("version", result.version)
       })
       .catch((err) => {
@@ -256,6 +260,10 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
   }
 
   async function installUpdate() {
+    if (store.url && !store.installable) {
+      platform.openLink(store.url)
+      return
+    }
     if (!platform.update || !platform.restart) return
     await platform
       .update()
@@ -299,7 +307,9 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
               }
             >
               <Button size="large" onClick={installUpdate}>
-                {language.t("error.page.action.updateTo", { version: store.version ?? "" })}
+                {store.installable
+                  ? language.t("error.page.action.updateTo", { version: store.version ?? "" })
+                  : language.t("common.open")}
               </Button>
             </Show>
           </Show>

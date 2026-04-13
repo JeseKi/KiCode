@@ -59,8 +59,8 @@ export function getCurrentSidecar(target = resolveTarget()) {
 }
 
 export async function copyBinaryToSidecarFolder(source: string, target = resolveTarget()) {
-  await $`mkdir -p src-tauri/sidecars`
-  const dest = windowsify(`src-tauri/sidecars/opencode-cli-${target}`)
+  await $`mkdir -p src-tauri/target/sidecars`
+  const dest = windowsify(`src-tauri/target/sidecars/opencode-cli-${target}`)
   await $`cp ${source} ${dest}`
   if (process.platform === "win32" && process.env.GITHUB_ACTIONS === "true") {
     await $`pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File ../../script/sign-windows.ps1 ${dest}`
