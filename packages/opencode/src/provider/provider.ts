@@ -69,10 +69,33 @@ export namespace Provider {
     return Number(match[1]) >= 5 && !modelID.startsWith("gpt-5-mini")
   }
 
-  async function key(id: "openai" | "anthropic") {
+  async function key() {
     const session = await KiCodeAuth.session()
     if (!session?.access) throw new Error("请重新登陆 KiCode 以使用模型。")
     return session.access
+  }
+
+  async function kifetch(input: RequestInfo | URL, init?: RequestInit) {
+    const head = new Headers(init?.headers)
+    head.set("Authorization", `Bearer ${await key()}`)
+    const res = await fetch(input, {
+      ...init,
+      headers: head,
+    })
+    if (res.status !== 401) return res
+
+    const row = await KiCodeAuth.refresh().catch(() => undefined)
+    if (!row?.access) {
+      void KiCodeAuth.logout()
+      throw new Error("KiCode Session 过期，请重新登录。")
+    }
+
+    const retry = new Headers(init?.headers)
+    retry.set("Authorization", `Bearer ${row.access}`)
+    return fetch(input, {
+      ...init,
+      headers: retry,
+    })
   }
 
   function family(id: string) {
@@ -273,7 +296,7 @@ export namespace Provider {
 
   const CUSTOM_LOADERS: Record<string, CustomLoader> = {
     async anthropic(input) {
-      const token = await key("anthropic").catch(() => {
+      const token = await key().catch(() => {
         KiCodeAuth.logout()
         throw new Error("KiCode Session 过期，请重新登录。")
       })
@@ -283,6 +306,7 @@ export namespace Provider {
         options: {
           ...(typeof token === "string" ? { apiKey: token } : {}),
           baseURL: anthropicURL,
+          fetch: kifetch,
           headers: {
             "anthropic-beta": "interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
           },
@@ -312,7 +336,7 @@ export namespace Provider {
       }
     },
     openai: async (input) => {
-      const token = await key("openai").catch(() => {
+      const token = await key().catch(() => {
         KiCodeAuth.logout()
         throw new Error("KiCode Session 过期，请重新登录。")
       })
@@ -325,6 +349,7 @@ export namespace Provider {
         options: {
           ...(typeof token === "string" ? { apiKey: token } : {}),
           baseURL: openaiURL,
+          fetch: kifetch,
         },
       }
     },

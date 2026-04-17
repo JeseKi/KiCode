@@ -12,6 +12,9 @@ const beat = 60_000
 const fallback = 25 * 60_000
 let seen = ""
 let ping = 0
+let refs = 0
+let timer: ReturnType<typeof setInterval> | undefined
+let task: Promise<void> | undefined
 
 type Token = {
   access_token?: string
@@ -94,6 +97,26 @@ const read = async () => {
   return row
 }
 
+const run = async (drop: boolean) => {
+  const row = await read()
+  if (!row) return
+  return live(row).catch(async () => {
+    if (!drop) return row
+    await clear()
+    return
+  })
+}
+
+const tick = (drop: boolean) => {
+  if (task) return task
+  task = run(drop)
+    .then(() => undefined)
+    .finally(() => {
+      task = undefined
+    })
+  return task
+}
+
 const live = async (row: Auth.Session) => {
   if (row.expires <= Date.now() + skew) return KiCodeAuth.refresh()
   if (seen === row.access && ping > Date.now() - beat) return row
@@ -130,12 +153,7 @@ const post = async (url: string, init: RequestInit, fallbackText: string) => {
 
 export namespace KiCodeAuth {
   export const session = async () => {
-    const row = await read()
-    if (!row) return
-    return live(row).catch(async () => {
-      await clear()
-      return
-    })
+    return run(true)
   }
 
   export const status = async () => {
@@ -160,7 +178,9 @@ export namespace KiCodeAuth {
       },
       "KiCode token refresh failed",
     ).catch(async (err) => {
-      await clear()
+      if (typeof err === "object" && err !== null && "status" in err && err.status === 401) {
+        await clear()
+      }
       throw err
     })
     return save(row.username, token(body, "KiCode refresh returned no token"))
@@ -213,4 +233,19 @@ export namespace KiCodeAuth {
     )
 
   export const logout = clear
+
+  export const start = (ms = beat) => {
+    refs += 1
+    if (timer) return
+    void tick(false)
+    timer = setInterval(() => void tick(false), ms)
+    timer.unref?.()
+  }
+
+  export const stop = () => {
+    refs = Math.max(0, refs - 1)
+    if (refs > 0 || !timer) return
+    clearInterval(timer)
+    timer = undefined
+  }
 }

@@ -13,7 +13,8 @@ function jwt(ms: number) {
 
 afterEach(async () => {
   globalThis.fetch = originalFetch
-  await Auth.remove("kicode")
+  KiCodeAuth.stop()
+  await KiCodeAuth.logout()
 })
 
 test("refreshes kicode session when token is near expiry", async () => {
@@ -141,4 +142,64 @@ test("checks profile at most once per heartbeat", async () => {
   await KiCodeAuth.session()
 
   expect(calls).toEqual(["https://kicode.chat/api/auth/profile"])
+})
+
+test("background heartbeat refreshes kicode session after startup", async () => {
+  const old = jwt(10 * 60_000)
+  const next = jwt(20 * 60_000)
+  const calls: Array<{ url: string; auth: string | null }> = []
+
+  globalThis.fetch = mock((url: string | URL | Request, init?: RequestInit) => {
+    const text = url.toString()
+    calls.push({
+      url: text,
+      auth: new Headers(init?.headers).get("Authorization"),
+    })
+    if (text === "https://kicode.chat/api/auth/profile") {
+      return Promise.resolve(new Response(null, { status: 401 }))
+    }
+    if (text === "https://kicode.chat/api/auth/refresh") {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            access_token: next,
+            refresh_token: "rt_new",
+          }),
+          { status: 200 },
+        ),
+      )
+    }
+    throw new Error(`unexpected url: ${text}`)
+  }) as unknown as typeof fetch
+
+  await Auth.set(
+    "kicode",
+    new Auth.Session({
+      type: "session",
+      username: "ki",
+      access: old,
+      refresh: "rt_old",
+      expires: Date.now() + 10 * 60_000,
+    }),
+  )
+
+  KiCodeAuth.start(10)
+  await Bun.sleep(30)
+
+  const row = await Auth.get("kicode")
+  expect(row?.type).toBe("session")
+  if (row?.type === "session") {
+    expect(row.access).toBe(next)
+    expect(row.refresh).toBe("rt_new")
+  }
+  expect(calls.slice(0, 2)).toEqual([
+    {
+      url: "https://kicode.chat/api/auth/profile",
+      auth: `Bearer ${old}`,
+    },
+    {
+      url: "https://kicode.chat/api/auth/refresh",
+      auth: "Bearer rt_old",
+    },
+  ])
 })

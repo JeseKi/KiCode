@@ -13,6 +13,7 @@ import { Flag } from "@/flag/flag"
 import { setTimeout as sleep } from "node:timers/promises"
 import { writeHeapSnapshot } from "node:v8"
 import { WorkspaceID } from "@/control-plane/schema"
+import { KiCodeAuth } from "@/kicode/auth"
 
 await Log.init({
   print: process.argv.includes("--print-logs"),
@@ -22,6 +23,8 @@ await Log.init({
     return "INFO"
   })(),
 })
+
+KiCodeAuth.start()
 
 process.on("unhandledRejection", (e) => {
   Log.Default.error("rejection", {
@@ -157,6 +160,7 @@ export const rpc = {
   async shutdown() {
     Log.Default.info("worker shutting down")
     if (eventStream.abort) eventStream.abort.abort()
+    KiCodeAuth.stop()
     await Instance.disposeAll()
     if (server) await server.stop(true)
   },
