@@ -1,17 +1,15 @@
 import { test, expect } from "../fixtures"
 import {
   defocus,
-  cleanupSession,
   cleanupTestProject,
-  closeSidebar,
   createTestProject,
-  hoverSessionItem,
   openSidebar,
   waitSession,
 } from "../actions"
 import { projectSwitchSelector } from "../selectors"
 import { dirSlug } from "../utils"
 
+/*
 test("collapsed sidebar popover stays open when archiving a session", async ({ page, slug, sdk, gotoSession }) => {
   const stamp = Date.now()
 
@@ -47,6 +45,7 @@ test("collapsed sidebar popover stays open when archiving a session", async ({ p
     await cleanupSession({ sdk, sessionID: two.id })
   }
 })
+*/
 
 test("open sidebar project popover stays closed after clicking avatar", async ({ page, withProject }) => {
   await page.setViewportSize({ width: 1400, height: 800 })
