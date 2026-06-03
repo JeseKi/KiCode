@@ -1,0 +1,15 @@
+Generate or edit images using KiCode's image generation API.
+
+Use this tool when the user asks you to create a new image, draw an image, render an image, transform an existing image, use reference images, or edit part of an image with an optional mask.
+
+IMPORTANT:
+- If you call this tool, the result is a JSON log file path. Read that JSON file yourself.
+- Extract each generated image from images[].data_url in the JSON log.
+- Save each extracted image as a local image file in the current project or working directory.
+- Reply to the user with each saved image using Markdown image syntax and an absolute path, for example ![](/absolute/path/to/image.png).
+- Do not claim that an image was generated, attached, uploaded, or provided unless this tool completed successfully.
+
+For new images, set action to "generate" and provide a detailed prompt.
+For edits, set action to "edit" and include one or more source image paths, URLs, or data URLs in images. Use mask only when the user has provided a mask image.
+
+The tool writes the request, response, and generated image data URLs to a JSON file under .logs and returns only that log file path.

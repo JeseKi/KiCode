@@ -900,6 +900,8 @@ export const dict = {
   "settings.permissions.tool.webfetch.description": "Fetch content from a URL",
   "settings.permissions.tool.websearch.title": "Web Search",
   "settings.permissions.tool.websearch.description": "Search the web",
+  "settings.permissions.tool.imagegen.title": "Image Generation",
+  "settings.permissions.tool.imagegen.description": "Generate or edit images using KiCode",
   "settings.permissions.tool.codesearch.title": "Code Search",
   "settings.permissions.tool.codesearch.description": "Search code on the web",
   "settings.permissions.tool.external_directory.title": "External Directory",

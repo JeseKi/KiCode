@@ -62,6 +62,18 @@ export namespace Provider {
   const root = process.env.OPENCODE_KICODE_URL || "https://kicode.chat"
   const openaiURL = process.env.OPENCODE_KICODE_OPENAI_URL || `${root}/api/codex/v1`
   const anthropicURL = process.env.OPENCODE_KICODE_ANTHROPIC_URL || `${root}/api/claude/v1`
+  const kicodeModelsURL = process.env.OPENCODE_KICODE_MODELS_URL || `${root}/api/kicode/models`
+  const KicodeModels = z.object({
+    models: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        category: z.string(),
+        tags: z.array(z.string()),
+        enabled: z.boolean(),
+      }),
+    ),
+  })
 
   function shouldUseCopilotResponsesApi(modelID: string): boolean {
     const match = /^gpt-(\d+)/.exec(modelID)
@@ -174,7 +186,7 @@ export namespace Provider {
   async function sync(input: Info, kind: "openai" | "anthropic", token?: string) {
     if (!token) return
 
-    const res = await fetch(`${kind === "openai" ? openaiURL : anthropicURL}/models`, {
+    const res = await fetch(kicodeModelsURL, {
       headers: {
         authorization: `Bearer ${token}`,
       },
@@ -182,22 +194,19 @@ export namespace Provider {
     }).catch(() => undefined)
     if (!res?.ok) return
 
-    const json = await res.json().catch(() => undefined)
-    if (!json || typeof json !== "object") return
+    const json = KicodeModels.safeParse(await res.json().catch(() => undefined))
+    if (!json.success) return
 
-    const rows = Array.isArray((json as any).data) ? (json as any).data : []
+    const category = kind === "openai" ? "openai" : "anthropic"
+    const rows = json.data.models.filter((row) => {
+      if (!row.enabled) return false
+      if (!row.tags.includes("coding")) return false
+      return row.category.toLowerCase() === category
+    })
     if (!rows.length) return
 
     const next = Object.fromEntries(
-      rows
-        .map((row: any) => {
-          const id = typeof row?.id === "string" ? row.id : undefined
-          if (!id) return
-          const name =
-            typeof row?.display_name === "string" ? row.display_name : typeof row?.name === "string" ? row.name : id
-          return [id, input.models[id] ?? generic(input, id, name, kind)] as const
-        })
-        .filter((item: readonly [string, Model] | undefined): item is readonly [string, Model] => Boolean(item)),
+      rows.map((row) => [row.id, input.models[row.id] ?? generic(input, row.id, row.name, kind)] as const),
     )
 
     if (Object.keys(next).length > 0) input.models = next

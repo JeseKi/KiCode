@@ -92,23 +92,45 @@ test("kicode token syncs openai and anthropic models", async () => {
   const originalFetch = globalThis.fetch
   globalThis.fetch = mock((url: string | URL | Request, init?: RequestInit) => {
     const text = url.toString()
-    if (text === "https://kicode.chat/api/codex/v1/models") {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            object: "list",
-            data: [{ id: "gpt-5.2" }],
-          }),
-          { status: 200 },
-        ),
-      )
+    if (text === "https://kicode.chat/api/auth/profile") {
+      return Promise.resolve(new Response(JSON.stringify({ username: "ki" }), { status: 200 }))
     }
-    if (text === "https://kicode.chat/api/claude/v1/models") {
+    if (text === "https://kicode.chat/api/kicode/models") {
       return Promise.resolve(
         new Response(
           JSON.stringify({
-            data: [{ id: "claude-sonnet-4-20250514", display_name: "Claude Sonnet 4" }],
-            has_more: false,
+            models: [
+              {
+                id: "gpt-5.2",
+                name: "gpt-5.2",
+                category: "OpenAI",
+                tags: ["coding"],
+                enabled: true,
+              },
+              {
+                id: "gpt-image-2",
+                name: "gpt-image-2",
+                category: "OpenAI",
+                tags: ["image_gen"],
+                enabled: true,
+              },
+              {
+                id: "claude-sonnet-4-20250514",
+                name: "Claude Sonnet 4",
+                category: "Anthropic",
+                tags: ["coding"],
+                enabled: true,
+              },
+              {
+                id: "claude-disabled",
+                name: "Claude Disabled",
+                category: "Anthropic",
+                tags: ["coding"],
+                enabled: false,
+              },
+            ],
+            categories: ["Anthropic", "OpenAI"],
+            tags: ["coding", "image_gen"],
           }),
           { status: 200 },
         ),
@@ -129,10 +151,16 @@ test("kicode token syncs openai and anthropic models", async () => {
   })
 
   try {
-    await Auth.set("openai", {
-      type: "api",
-      key: "test-token",
-    })
+    await Auth.set(
+      "kicode",
+      new Auth.Session({
+        type: "session",
+        username: "ki",
+        access: "test-token",
+        refresh: "test-refresh",
+        expires: Date.now() + 10 * 60_000,
+      }),
+    )
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
@@ -147,8 +175,7 @@ test("kicode token syncs openai and anthropic models", async () => {
     })
   } finally {
     globalThis.fetch = originalFetch
-    await Auth.remove("openai")
-    await Auth.remove("anthropic")
+    await Auth.remove("kicode")
   }
 })
 

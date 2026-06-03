@@ -35,24 +35,28 @@ test("kicode provider fetch refreshes and retries after 401", async () => {
       return Promise.resolve(new Response(JSON.stringify({ username: "ki" }), { status: 200 }))
     }
 
-    if (text === "https://kicode.chat/api/codex/v1/models") {
+    if (text === "https://kicode.chat/api/kicode/models") {
       return Promise.resolve(
         new Response(
           JSON.stringify({
-            object: "list",
-            data: [{ id: "gpt-5.2" }],
-          }),
-          { status: 200 },
-        ),
-      )
-    }
-
-    if (text === "https://kicode.chat/api/claude/v1/models") {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            data: [{ id: "claude-sonnet-4-20250514", display_name: "Claude Sonnet 4" }],
-            has_more: false,
+            models: [
+              {
+                id: "gpt-5.2",
+                name: "gpt-5.2",
+                category: "OpenAI",
+                tags: ["coding"],
+                enabled: true,
+              },
+              {
+                id: "claude-sonnet-4-20250514",
+                name: "Claude Sonnet 4",
+                category: "Anthropic",
+                tags: ["coding"],
+                enabled: true,
+              },
+            ],
+            categories: ["Anthropic", "OpenAI"],
+            tags: ["coding"],
           }),
           { status: 200 },
         ),

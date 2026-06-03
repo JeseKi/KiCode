@@ -1,5 +1,6 @@
 import { useMarked } from "../context/marked"
 import { useI18n } from "../context/i18n"
+import { useOptionalData } from "../context/data"
 import DOMPurify from "dompurify"
 import morphdom from "morphdom"
 import { checksum } from "@opencode-ai/util/encode"
@@ -64,6 +65,9 @@ type CopyLabels = {
 }
 
 const urlPattern = /^https?:\/\/[^\s<>()`"']+$/
+const imagePattern = /\.(png|jpe?g|gif|webp|bmp|avif)(?:[?#].*)?$/i
+const emptyImage =
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
 
 function codeUrl(text: string) {
   const href = text.trim().replace(/[),.;!?]+$/, "")
@@ -181,6 +185,42 @@ function decorate(root: HTMLDivElement, labels: CopyLabels) {
   markCodeLinks(root)
 }
 
+function localImage(src: string) {
+  if (!src) return
+  if (/^(https?:|data:|blob:)/i.test(src)) return
+  if (!imagePattern.test(src)) return
+  if (src.startsWith("file://")) return src
+  if (/^\/[^/]/.test(src)) return src
+  if (/^[a-zA-Z]:[\\/]/.test(src)) return src
+}
+
+function setupImages(
+  root: HTMLDivElement,
+  load: ((path: string) => Promise<string | undefined>) | undefined,
+  blob: Set<string>,
+) {
+  if (!load) return
+  const images = Array.from(root.querySelectorAll("img"))
+  for (const img of images) {
+    const raw = img.getAttribute("data-local-image-src") ?? img.getAttribute("src") ?? ""
+    const src = localImage(raw)
+    if (!src) continue
+    if (img.getAttribute("data-local-image-loaded") === "true" && img.getAttribute("data-local-image-src") === src) {
+      continue
+    }
+    img.setAttribute("data-local-image-src", src)
+    img.setAttribute("data-local-image-loaded", "false")
+    img.setAttribute("src", emptyImage)
+    void load(src).then((url) => {
+      if (!url) return
+      if (img.getAttribute("data-local-image-src") !== src) return
+      if (url.startsWith("blob:")) blob.add(url)
+      img.setAttribute("src", url)
+      img.setAttribute("data-local-image-loaded", "true")
+    })
+  }
+}
+
 function setupCodeCopy(root: HTMLDivElement, getLabels: () => CopyLabels) {
   const timeouts = new Map<HTMLButtonElement, ReturnType<typeof setTimeout>>()
 
@@ -248,7 +288,9 @@ export function Markdown(
   const [local, others] = splitProps(props, ["text", "cacheKey", "streaming", "class", "classList"])
   const marked = useMarked()
   const i18n = useI18n()
+  const data = useOptionalData()
   const [root, setRoot] = createSignal<HTMLDivElement>()
+  const blobs = new Set<string>()
   const [html] = createResource(
     () => ({
       text: local.text,
@@ -328,10 +370,12 @@ export function Markdown(
         copy: i18n.t("ui.message.copy"),
         copied: i18n.t("ui.message.copied"),
       }))
+    setupImages(container, data?.asset, blobs)
   })
 
   onCleanup(() => {
     if (copyCleanup) copyCleanup()
+    for (const url of blobs) URL.revokeObjectURL(url)
   })
 
   return (

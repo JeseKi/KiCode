@@ -32,12 +32,21 @@ console.log("Generated models-snapshot.js")
 
 // Load migrations from migration directories
 const migrationDirs = (
-  await fs.promises.readdir(path.join(dir, "migration"), {
-    withFileTypes: true,
-  })
+  await Promise.all(
+    (
+      await fs.promises.readdir(path.join(dir, "migration"), {
+        withFileTypes: true,
+      })
+    )
+      .filter((entry) => entry.isDirectory() && /^\d{4}\d{2}\d{2}\d{2}\d{2}\d{2}/.test(entry.name))
+      .map(async (entry) => {
+        const file = path.join(dir, "migration", entry.name, "migration.sql")
+        if (!(await Bun.file(file).exists())) return
+        return entry.name
+      }),
+  )
 )
-  .filter((entry) => entry.isDirectory() && /^\d{4}\d{2}\d{2}\d{2}\d{2}\d{2}/.test(entry.name))
-  .map((entry) => entry.name)
+  .filter((name): name is string => Boolean(name))
   .sort()
 
 const migrations = await Promise.all(

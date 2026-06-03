@@ -31,6 +31,7 @@ import type {
   ExperimentalWorkspaceListResponses,
   ExperimentalWorkspaceRemoveErrors,
   ExperimentalWorkspaceRemoveResponses,
+  FileAssetResponses,
   FileListResponses,
   FilePartInput,
   FilePartSource,
@@ -50,6 +51,14 @@ import type {
   GlobalUpgradeErrors,
   GlobalUpgradeResponses,
   InstanceDisposeResponses,
+  KicodeLoginErrors,
+  KicodeLoginResponses,
+  KicodeLogoutResponses,
+  KicodeRegisterErrors,
+  KicodeRegisterResponses,
+  KicodeSendCodeErrors,
+  KicodeSendCodeResponses,
+  KicodeSessionResponses,
   LspStatusResponses,
   McpAddErrors,
   McpAddResponses,
@@ -228,6 +237,130 @@ class HeyApiRegistry<T> {
 
   set(value: T, key?: string): void {
     this.instances.set(key ?? this.defaultKey, value)
+  }
+}
+
+export class Kicode extends HeyApiClient {
+  /**
+   * Get KiCode auth session
+   *
+   * Returns the current KiCode app login state.
+   */
+  public session<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+    return (options?.client ?? this.client).get<KicodeSessionResponses, unknown, ThrowOnError>({
+      url: "/kicode/session",
+      ...options,
+    })
+  }
+
+  /**
+   * Login to KiCode
+   *
+   * Authenticates the app with KiCode and stores the session locally.
+   */
+  public login<ThrowOnError extends boolean = false>(
+    parameters?: {
+      username?: string
+      password?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "body", key: "username" },
+            { in: "body", key: "password" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<KicodeLoginResponses, KicodeLoginErrors, ThrowOnError>({
+      url: "/kicode/login",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Register KiCode account
+   *
+   * Registers a KiCode account for app login.
+   */
+  public register<ThrowOnError extends boolean = false>(
+    parameters?: {
+      username?: string
+      email?: string
+      password?: string
+      code?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "body", key: "username" },
+            { in: "body", key: "email" },
+            { in: "body", key: "password" },
+            { in: "body", key: "code" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<KicodeRegisterResponses, KicodeRegisterErrors, ThrowOnError>({
+      url: "/kicode/register",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Send KiCode verification code
+   *
+   * Sends the registration verification code email.
+   */
+  public sendCode<ThrowOnError extends boolean = false>(
+    parameters?: {
+      email?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "body", key: "email" }] }])
+    return (options?.client ?? this.client).post<KicodeSendCodeResponses, KicodeSendCodeErrors, ThrowOnError>({
+      url: "/kicode/send-verification-code",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Logout KiCode
+   *
+   * Clears the stored KiCode app login session.
+   */
+  public logout<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+    return (options?.client ?? this.client).post<KicodeLogoutResponses, unknown, ThrowOnError>({
+      url: "/kicode/logout",
+      ...options,
+    })
   }
 }
 
@@ -2968,6 +3101,38 @@ export class File extends HeyApiClient {
   }
 
   /**
+   * Read image asset
+   *
+   * Read a local raster image file as an HTTP image response for UI rendering.
+   */
+  public asset<ThrowOnError extends boolean = false>(
+    parameters: {
+      directory?: string
+      workspace?: string
+      path: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "query", key: "path" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<FileAssetResponses, unknown, ThrowOnError>({
+      url: "/file/asset",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
    * Get file status
    *
    * Get the git status of all files in the project.
@@ -3950,6 +4115,11 @@ export class OpencodeClient extends HeyApiClient {
   constructor(args?: { client?: Client; key?: string }) {
     super(args)
     OpencodeClient.__registry.set(this, args?.key)
+  }
+
+  private _kicode?: Kicode
+  get kicode(): Kicode {
+    return (this._kicode ??= new Kicode({ client: this.client }))
   }
 
   private _global?: Global

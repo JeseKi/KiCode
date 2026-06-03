@@ -4,6 +4,14 @@ export type ClientOptions = {
   baseUrl: `${string}://${string}` | (string & {})
 }
 
+export type BadRequestError = {
+  data: unknown
+  errors: Array<{
+    [key: string]: unknown
+  }>
+  success: false
+}
+
 export type EventInstallationUpdated = {
   type: "installation.updated"
   properties: {
@@ -1169,6 +1177,7 @@ export type PermissionConfig =
       question?: PermissionActionConfig
       webfetch?: PermissionActionConfig
       websearch?: PermissionActionConfig
+      imagegen?: PermissionActionConfig
       codesearch?: PermissionActionConfig
       lsp?: PermissionRuleConfig
       doom_loop?: PermissionActionConfig
@@ -1619,12 +1628,12 @@ export type Config = {
   }
 }
 
-export type BadRequestError = {
-  data: unknown
-  errors: Array<{
-    [key: string]: unknown
-  }>
-  success: false
+export type SessionAuth = {
+  type: "session"
+  username: string
+  refresh: string
+  access: string
+  expires: number
 }
 
 export type OAuth = {
@@ -1647,7 +1656,7 @@ export type WellKnownAuth = {
   token: string
 }
 
-export type Auth = OAuth | ApiAuth | WellKnownAuth
+export type Auth = SessionAuth | OAuth | ApiAuth | WellKnownAuth
 
 export type NotFoundError = {
   name: "NotFoundError"
@@ -2050,6 +2059,125 @@ export type FormatterStatus = {
   extensions: Array<string>
   enabled: boolean
 }
+
+export type KicodeSessionData = {
+  body?: never
+  path?: never
+  query?: never
+  url: "/kicode/session"
+}
+
+export type KicodeSessionResponses = {
+  /**
+   * Current KiCode login state
+   */
+  200: {
+    authenticated: boolean
+    username?: string
+  }
+}
+
+export type KicodeSessionResponse = KicodeSessionResponses[keyof KicodeSessionResponses]
+
+export type KicodeLoginData = {
+  body?: {
+    username: string
+    password: string
+  }
+  path?: never
+  query?: never
+  url: "/kicode/login"
+}
+
+export type KicodeLoginErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type KicodeLoginError = KicodeLoginErrors[keyof KicodeLoginErrors]
+
+export type KicodeLoginResponses = {
+  /**
+   * Logged in
+   */
+  200: {
+    authenticated: boolean
+    username?: string
+  }
+}
+
+export type KicodeLoginResponse = KicodeLoginResponses[keyof KicodeLoginResponses]
+
+export type KicodeRegisterData = {
+  body?: {
+    username: string
+    email: string
+    password: string
+    code: string
+  }
+  path?: never
+  query?: never
+  url: "/kicode/register"
+}
+
+export type KicodeRegisterErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type KicodeRegisterError = KicodeRegisterErrors[keyof KicodeRegisterErrors]
+
+export type KicodeRegisterResponses = {
+  /**
+   * Registered
+   */
+  201: unknown
+}
+
+export type KicodeSendCodeData = {
+  body?: {
+    email: string
+  }
+  path?: never
+  query?: never
+  url: "/kicode/send-verification-code"
+}
+
+export type KicodeSendCodeErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type KicodeSendCodeError = KicodeSendCodeErrors[keyof KicodeSendCodeErrors]
+
+export type KicodeSendCodeResponses = {
+  /**
+   * Sent
+   */
+  200: unknown
+}
+
+export type KicodeLogoutData = {
+  body?: never
+  path?: never
+  query?: never
+  url: "/kicode/logout"
+}
+
+export type KicodeLogoutResponses = {
+  /**
+   * Logged out
+   */
+  200: boolean
+}
+
+export type KicodeLogoutResponse = KicodeLogoutResponses[keyof KicodeLogoutResponses]
 
 export type GlobalHealthData = {
   body?: never
@@ -4421,6 +4549,24 @@ export type FileReadResponses = {
 }
 
 export type FileReadResponse = FileReadResponses[keyof FileReadResponses]
+
+export type FileAssetData = {
+  body?: never
+  path?: never
+  query: {
+    directory?: string
+    workspace?: string
+    path: string
+  }
+  url: "/file/asset"
+}
+
+export type FileAssetResponses = {
+  /**
+   * Image asset
+   */
+  200: unknown
+}
 
 export type FileStatusData = {
   body?: never

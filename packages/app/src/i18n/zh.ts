@@ -789,6 +789,8 @@ export const dict = {
   "settings.permissions.tool.webfetch.description": "从 URL 获取内容",
   "settings.permissions.tool.websearch.title": "网页搜索",
   "settings.permissions.tool.websearch.description": "搜索网页",
+  "settings.permissions.tool.imagegen.title": "图像生成",
+  "settings.permissions.tool.imagegen.description": "使用 KiCode 生成或编辑图像",
   "settings.permissions.tool.codesearch.title": "代码搜索",
   "settings.permissions.tool.codesearch.description": "在网上搜索代码",
   "settings.permissions.tool.external_directory.title": "外部目录",

@@ -22,6 +22,7 @@ import { Plugin } from "../plugin"
 import { ProviderID, type ModelID } from "../provider/schema"
 import { WebSearchTool } from "./websearch"
 import { CodeSearchTool } from "./codesearch"
+import { ImageGenTool } from "./imagegen"
 import { Flag } from "@/flag/flag"
 import { Log } from "@/util/log"
 import { LspTool } from "./lsp"
@@ -127,6 +128,7 @@ export namespace ToolRegistry {
           TaskTool,
           WebFetchTool,
           TodoWriteTool,
+          ImageGenTool,
           WebSearchTool,
           CodeSearchTool,
           SkillTool,

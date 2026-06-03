@@ -1,11 +1,31 @@
 import { Hono } from "hono"
+import { HTTPException } from "hono/http-exception"
 import { describeRoute, validator, resolver } from "hono-openapi"
+import path from "path"
+import { fileURLToPath } from "url"
 import z from "zod"
 import { File } from "../../file"
 import { Ripgrep } from "../../file/ripgrep"
 import { LSP } from "../../lsp"
 import { Instance } from "../../project/instance"
+import { Filesystem } from "../../util/filesystem"
 import { lazy } from "../../util/lazy"
+
+const raster = new Set(["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/avif"])
+
+function resolve(input: string) {
+  const raw = input.startsWith("file://")
+    ? fileURLToPath(input)
+    : (() => {
+        try {
+          return decodeURIComponent(input)
+        } catch {
+          return input
+        }
+      })()
+  const full = path.isAbsolute(raw) ? raw : path.join(Instance.directory, raw)
+  return Filesystem.resolve(full)
+}
 
 export const FileRoutes = lazy(() =>
   new Hono()
@@ -170,6 +190,53 @@ export const FileRoutes = lazy(() =>
         const path = c.req.valid("query").path
         const content = await File.read(path)
         return c.json(content)
+      },
+    )
+    .get(
+      "/file/asset",
+      describeRoute({
+        summary: "Read image asset",
+        description: "Read a local raster image file as an HTTP image response for UI rendering.",
+        operationId: "file.asset",
+        responses: {
+          200: {
+            description: "Image asset",
+            content: {
+              "image/png": {
+                schema: resolver(z.any()),
+              },
+              "image/jpeg": {
+                schema: resolver(z.any()),
+              },
+              "image/gif": {
+                schema: resolver(z.any()),
+              },
+              "image/webp": {
+                schema: resolver(z.any()),
+              },
+            },
+          },
+        },
+      }),
+      validator(
+        "query",
+        z.object({
+          path: z.string(),
+        }),
+      ),
+      async (c) => {
+        const file = resolve(c.req.valid("query").path)
+        if (!Instance.containsPath(file)) throw new HTTPException(403, { message: "Access denied" })
+
+        const stat = Filesystem.stat(file)
+        if (!stat?.isFile()) throw new HTTPException(404, { message: "Image not found" })
+
+        const mime = Filesystem.mimeType(file)
+        if (!raster.has(mime)) throw new HTTPException(415, { message: "Unsupported image type" })
+
+        c.header("Content-Type", mime)
+        c.header("Cache-Control", "private, max-age=60")
+        return c.body(Bun.file(file).stream())
       },
     )
     .get(
